@@ -28,6 +28,8 @@ public sealed class SettingsPage
     public string Query {get=>query; set=>query=value??"";}
     public float ScrollPosition {get;private set;}
     public int LastRowCount {get;private set;}
+    private float? restoreScroll;
+    public void RestoreScroll(float position) => restoreScroll = position;
     private string? scrollTarget;
     public void ScrollToGroup(string id)=>scrollTarget=id;
     public void FocusSearch()=>focusSearch=true;
@@ -69,7 +71,7 @@ public sealed class SettingsPage
         var labelPos=pos+new Vector2(12,5)*Scale;
         float available=Math.Max(0,statusX-labelPos.X-8*Scale);
         if(ImGui.CalcTextSize(title).X*.96f>available){
-            if(ImGui.IsItemHovered()||ImGui.IsItemFocused())ImGui.SetTooltip(group.Name);
+            if(Controls.HintRequested())ImGui.SetTooltip(group.Name);
             while(title.Length>0&&ImGui.CalcTextSize(title+"…").X*.96f>available)title=title[..^1];
             title+="…";
         }
@@ -112,6 +114,11 @@ public sealed class SettingsPage
                     if(lastQuery.Length==0)browseScroll=ImGui.GetScrollY();
                     ImGui.SetScrollY(searching?0:browseScroll);
                     lastQuery=appliedQuery;
+                }
+                if (restoreScroll is float offset)
+                {
+                    ImGui.SetScrollY(offset);
+                    restoreScroll = null;
                 }
                 if(visible)foreach(var group in groups)
                 {

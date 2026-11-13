@@ -5,6 +5,18 @@ namespace AetherglassUI;
 
 public static class Controls
 {
+    internal static bool HintRequested() => ImGui.IsItemHovered() || (ImGui.GetIO().NavVisible && ImGui.IsItemFocused());
+
+    /// <summary>Text actions use the same height and horizontal inset across rows, editors and dialogs.</summary>
+    public static bool ActionButton(string label)
+    {
+        float unit = ImGui.GetTextLineHeight() / 16f;
+        float width = ImGui.CalcTextSize(label, true).X + 20 * unit;
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(10, 6) * unit);
+        try { return ImGui.Button(label, new Vector2(width, 30 * unit)); }
+        finally { ImGui.PopStyleVar(); }
+    }
+
     public static void Row(string id, string label, string detail, Action draw)
     {
         Row(id,label,detail,draw,FieldLayout.Flexible,true,true);
@@ -74,7 +86,7 @@ public static class Controls
         var dl=ImGui.GetWindowDrawList();
         dl.AddCircle(center,5*scale,0xffb9ada6,16,1.4f*scale);
         dl.AddLine(center+new Vector2(3)*scale,center+new Vector2(8)*scale,0xffb9ada6,1.5f*scale);
-        if(query.Length>0){ImGui.SameLine();if(ImGui.Button("Clear###clear"+id)){query="";changed=true;}}
+        if(query.Length>0){ImGui.SameLine();if(ActionButton("Clear###clear"+id)){query="";changed=true;}}
         return changed;
     }
 
@@ -165,9 +177,9 @@ public static class Controls
         ImGui.TextWrapped(question);
         ImGui.TextWrapped(detail);
         ImGui.Spacing();
-        if (ImGui.Button(commit)) accept();
+        if (Controls.ActionButton(commit)) accept();
         ImGui.SameLine();
-        if (ImGui.Button("Cancel") || ImGui.IsKeyPressed(ImGuiKey.Escape)) cancel();
+        if (Controls.ActionButton("Cancel") || ImGui.IsKeyPressed(ImGuiKey.Escape)) cancel();
     }
 
     public static void Multiple(string label,IEnumerable<string> options,ISet<string> selection)
@@ -190,14 +202,14 @@ public static class Controls
         ImGui.PushID(button);
         try
         {
-            if (ImGui.Button(button)) ImGui.OpenPopup("Confirm");
+            if (Controls.ActionButton(button)) ImGui.OpenPopup("Confirm");
             if (!ImGui.BeginPopup("Confirm")) return;
             try
             {
                 ImGui.TextWrapped(question);
-                if (ImGui.Button(commit)) { accepted(); ImGui.CloseCurrentPopup(); }
+                if (Controls.ActionButton(commit)) { accepted(); ImGui.CloseCurrentPopup(); }
                 ImGui.SameLine();
-                if (ImGui.Button("Cancel")) ImGui.CloseCurrentPopup();
+                if (Controls.ActionButton("Cancel")) ImGui.CloseCurrentPopup();
             }
             finally { ImGui.EndPopup(); }
         }

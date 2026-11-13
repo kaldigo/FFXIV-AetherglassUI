@@ -46,10 +46,10 @@ public static class OrderedEditor
     {
         int target = index;
         ImGui.BeginDisabled(index == 0);
-        try { if(ImGui.SmallButton("Up")) target--; } finally { ImGui.EndDisabled(); }
+        try { if(Controls.ActionButton("Up")) target--; } finally { ImGui.EndDisabled(); }
         ImGui.SameLine();
         ImGui.BeginDisabled(index == count-1);
-        try { if(ImGui.SmallButton("Down")) target++; } finally { ImGui.EndDisabled(); }
+        try { if(Controls.ActionButton("Down")) target++; } finally { ImGui.EndDisabled(); }
         return target;
     }
 }

@@ -54,8 +54,8 @@ public sealed class CatalogPicker
             if(last>0)
             {
                 ImGui.TextDisabled($"{matches.Count:N0} matches · Page {page+1} of {last+1}");
-                ImGui.BeginDisabled(page==0);if(ImGui.SmallButton("Previous"))page--;ImGui.EndDisabled();
-                ImGui.SameLine();ImGui.BeginDisabled(page==last);if(ImGui.SmallButton("Next"))page++;ImGui.EndDisabled();
+                ImGui.BeginDisabled(page==0);if(Controls.ActionButton("Previous"))page--;ImGui.EndDisabled();
+                ImGui.SameLine();ImGui.BeginDisabled(page==last);if(Controls.ActionButton("Next"))page++;ImGui.EndDisabled();
             }
             foreach(var group in matches.Skip(page*PageSize).Take(PageSize).GroupBy(e=>e.Group))
             {
@@ -63,8 +63,8 @@ public sealed class CatalogPicker
                 ImGui.TextUnformatted(group.Key);
                 if(!single)
                 {
-                    if(ImGui.SmallButton("Select shown"))selected.UnionWith(group.Where(e=>index.ContainsKey(e.Id)).Select(e=>e.Id));
-                    ImGui.SameLine();if(ImGui.SmallButton("Clear shown"))selected.ExceptWith(group.Select(e=>e.Id));
+                    if(Controls.ActionButton("Select shown"))selected.UnionWith(group.Where(e=>index.ContainsKey(e.Id)).Select(e=>e.Id));
+                    ImGui.SameLine();if(Controls.ActionButton("Clear shown"))selected.ExceptWith(group.Select(e=>e.Id));
                 }
                 foreach(var entry in group)
                 {

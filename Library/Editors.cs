@@ -55,8 +55,8 @@ public static class Editors
     {
         if(error.Length>0)ImGui.TextWrapped(error);
         ImGui.BeginDisabled(!dirty||error.Length>0);
-        try { if(ImGui.Button("Apply"))apply(); } finally { ImGui.EndDisabled(); }
+        try { if(Controls.ActionButton("Apply"))apply(); } finally { ImGui.EndDisabled(); }
         ImGui.SameLine();ImGui.BeginDisabled(!dirty);
-        try { if(ImGui.Button("Discard"))discard(); } finally { ImGui.EndDisabled(); }
+        try { if(Controls.ActionButton("Discard"))discard(); } finally { ImGui.EndDisabled(); }
     }
 }

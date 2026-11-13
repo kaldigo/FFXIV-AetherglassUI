@@ -41,13 +41,13 @@ public sealed class CategoryEditor
             var tip=mid+new Vector2(0,2*sign)*unit;
             dl.AddLine(mid+new Vector2(-4,-2*sign)*unit,tip,0xffcfc6b6,1.4f*unit);
             dl.AddLine(tip,mid+new Vector2(4,-2*sign)*unit,0xffcfc6b6,1.4f*unit);
-            if(ImGui.IsItemHovered()||ImGui.IsItemFocused())ImGui.SetTooltip(summary);
+            if(Controls.HintRequested())ImGui.SetTooltip(summary);
         },Detail:detail){ExpandedContent=()=>{if(Expanded)Draw(choices,values,changed);}};
     }
 
     private static void BulkMenu(string id,string label,string scopeLabel,CategoryOption[] scope,ISet<string> values,Action? changed)
     {
-        if(ImGui.Button(label+"###"+id))ImGui.OpenPopup(id);
+        if(Controls.ActionButton(label+"###"+id))ImGui.OpenPopup(id);
         if(!ImGui.BeginPopup(id))return;
         try
         {
@@ -144,6 +144,6 @@ public sealed class CategoryEditor
         dl.AddText(ImGui.GetFont(),ImGui.GetFontSize(),textAt,ImGui.GetColorU32(ImGuiCol.Text),entry.Name,wrap);
         dl.PopClipRect();
         if(selected>0)dl.AddRect(pos,pos+size,full?0xffced462:0xff60bef4,5*unit,ImDrawFlags.None,1.5f*unit);
-        if(ImGui.IsItemHovered()||ImGui.IsItemFocused())ImGui.SetTooltip(entry.Name+" · "+(full?"Selected":selected>0?"Partially selected":"Unselected")+"\n"+string.Join(", ",entry.Members));
+        if(Controls.HintRequested())ImGui.SetTooltip(entry.Name+" · "+(full?"Selected":selected>0?"Partially selected":"Unselected")+"\n"+string.Join(", ",entry.Members));
     }
 }

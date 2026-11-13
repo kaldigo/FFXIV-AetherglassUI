@@ -7,7 +7,7 @@ public sealed record ReviewStatus(string Text,StateTone Tone=StateTone.Ready,Act
 {
     public void Draw()
     {
-        if(Review!=null){if(ImGui.SmallButton("Review"))Review();ImGui.SameLine();}
+        if(Review!=null){if(Controls.ActionButton("Review"))Review();ImGui.SameLine();}
         ImGui.TextUnformatted(Text);
     }
 }
@@ -18,7 +18,7 @@ public static class ReviewControls
     {
         Controls.Row(id,label,detail,()=>{
             if(inspect==null)ImGui.TextUnformatted(value?.ToString("N0")??"Unknown");
-            else if(ImGui.Button((value?.ToString("N0")??"Unknown")+" · Review"))inspect();
+            else if(Controls.ActionButton((value?.ToString("N0")??"Unknown")+" · Review"))inspect();
         });
     }
     public static string Filters(string selected,IEnumerable<(string Key,int Count)> filters)
@@ -30,7 +30,7 @@ public static class ReviewControls
             string label=$"{key} ({count})";
             if(!first&&ImGui.GetItemRectMax().X+ImGui.CalcTextSize(label).X+30<=right)ImGui.SameLine();
             if(key==selected)ImGui.PushStyleColor(ImGuiCol.Button,0x806e7442);
-            bool clicked=ImGui.SmallButton(label+"###"+key);
+            bool clicked=Controls.ActionButton(label+"###"+key);
             if(key==selected)ImGui.PopStyleColor();
             if(clicked)selected=key;
             first=false;
