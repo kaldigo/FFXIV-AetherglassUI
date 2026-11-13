@@ -2,7 +2,7 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 namespace AetherglassUI;
 
-public enum FieldLayout { Flexible, Number, Switch, Color }
+public enum FieldLayout { Flexible, Number, Switch, Color, FullWidth }
 public sealed record Setting(string Id,string Label,Action Draw,string Keywords="",string Detail="",Func<bool>? Visible=null)
 {
     public Func<string?>? DisabledReason { get; init; }
@@ -157,7 +157,15 @@ public sealed class SettingsPage
                                 string? reason=r.DisabledReason?.Invoke();
                                 var detail=string.Join(" ",new[]{r.Detail,reason}.Where(x=>!string.IsNullOrEmpty(x)));
                                 ImGui.PushID(topic);
-                                try{Controls.Row(r.Id,r.Label,detail,()=>{
+                                try{
+                                    if (r.Layout == FieldLayout.FullWidth)
+                                    {
+                                        ImGui.PushID(r.Id);
+                                        ImGui.BeginDisabled(!string.IsNullOrEmpty(reason));
+                                        try { r.Draw(); } finally { ImGui.EndDisabled(); ImGui.PopID(); }
+                                        continue;
+                                    }
+                                    Controls.Row(r.Id,r.Label,detail,()=>{
                                     ImGui.BeginDisabled(!string.IsNullOrEmpty(reason));
                                     try{r.Draw();}finally{ImGui.EndDisabled();}
                                 },r.Layout,first,last);

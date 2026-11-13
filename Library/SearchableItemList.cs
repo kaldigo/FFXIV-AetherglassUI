@@ -29,7 +29,30 @@ public sealed class SearchableItemList
     public void Draw(IEnumerable<ItemListEntry> configured, Func<string, IReadOnlyList<ItemListEntry>> searchCatalog,
         Action<uint> open, string configuredLabel = "Configured items", string catalogLabel = "Other items")
     {
-        Controls.Search("##item-search", "Find an item by name or ID...", ref query);
+        float scale = ImGui.GetTextLineHeight() / 16f;
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(14, 12) * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 6 * scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(8, 6) * scale);
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, 0x85170f0c);
+        bool visible = ImGui.BeginChild("item-picker", new Vector2(0, 252 * scale), false,
+            ImGuiWindowFlags.AlwaysUseWindowPadding | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+        try
+        {
+            if (!visible) return;
+            Controls.Search("##item-search", "Find an item by name or ID...", ref query);
+            DrawResults(configured, searchCatalog, open, configuredLabel, catalogLabel, scale);
+        }
+        finally
+        {
+            ImGui.EndChild();
+            ImGui.PopStyleColor();
+            ImGui.PopStyleVar(3);
+        }
+    }
+
+    private void DrawResults(IEnumerable<ItemListEntry> configured, Func<string, IReadOnlyList<ItemListEntry>> searchCatalog,
+        Action<uint> open, string configuredLabel, string catalogLabel, float scale)
+    {
         string term = query.Trim();
         bool changed = term != lastQuery;
         if (changed)
@@ -37,8 +60,9 @@ public sealed class SearchableItemList
             suggestions = term.Length >= 2 ? searchCatalog(term) : [];
             lastQuery = term;
         }
-        float scale = ImGui.GetTextLineHeight() / 16f;
-        bool shown = ImGui.BeginChild("item-results", new Vector2(0, 176 * scale), true, ImGuiWindowFlags.AlwaysUseWindowPadding);
+        ImGui.PushStyleColor(ImGuiCol.ChildBg, Vector4.Zero);
+        bool shown = ImGui.BeginChild("item-results", Vector2.Zero, false);
+        ImGui.PopStyleColor();
         try
         {
             if (restoreScroll.HasValue || changed)
@@ -51,18 +75,48 @@ public sealed class SearchableItemList
                     .ThenBy(e => e.Id).ToArray();
             var savedIds = saved.Select(e => e.Id).ToHashSet();
             var available = suggestions.Where(e => !savedIds.Contains(e.Id)).ToArray();
-            if (saved.Length > 0) DrawEntries(configuredLabel, saved, open);
-            if (available.Length > 0) DrawEntries(catalogLabel, available, open);
+            if (saved.Length > 0) DrawEntries(configuredLabel, saved, open, scale);
+            if (available.Length > 0) DrawEntries(catalogLabel, available, open, scale);
             if (saved.Length == 0 && available.Length == 0)
                 ImGui.TextWrapped(term.Length < 2 ? "Search with at least two characters to add an item." : "No matching items.");
         }
         finally { ImGui.EndChild(); }
     }
 
-    private static void DrawEntries(string label, IEnumerable<ItemListEntry> entries, Action<uint> open)
+    private static void DrawEntries(string label, ItemListEntry[] entries, Action<uint> open, float scale)
     {
         ImGui.TextDisabled(label);
-        foreach (var entry in entries)
-            if (ImGui.Selectable($"{entry.Name}  ({entry.Id})###{entry.Id}")) open(entry.Id);
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        ImGui.PushStyleColor(ImGuiCol.HeaderHovered, 0x453f8579);
+        ImGui.PushStyleColor(ImGuiCol.HeaderActive, 0x80519488);
+        try
+        {
+            foreach (var entry in entries)
+            {
+                var start = ImGui.GetCursorScreenPos();
+                float width = ImGui.GetContentRegionAvail().X;
+                bool choose = ImGui.Selectable($"##item-{entry.Id}", false, ImGuiSelectableFlags.None,
+                    new Vector2(width, 32 * scale));
+                var dl = ImGui.GetWindowDrawList();
+                float center = start.Y + 16 * scale;
+                float right = start.X + width - 10 * scale;
+                string id = entry.Id.ToString();
+                float idX = right - 17 * scale - ImGui.CalcTextSize(id).X;
+                var namePos = new Vector2(start.X + 8 * scale, center - ImGui.GetTextLineHeight() / 2);
+                dl.PushClipRect(start, new Vector2(Math.Max(start.X, idX - 10 * scale), start.Y + 32 * scale), true);
+                dl.AddText(namePos, ImGui.GetColorU32(ImGuiCol.Text), entry.Name);
+                dl.PopClipRect();
+                dl.AddText(new Vector2(idX, namePos.Y), ImGui.GetColorU32(ImGuiCol.TextDisabled), id);
+                uint accent = ImGui.IsItemHovered() || ImGui.IsItemFocused() ? 0xffced462 : 0xffaa9e92;
+                dl.AddLine(new(right-4*scale,center-4*scale),new(right,center),accent,1.4f*scale);
+                dl.AddLine(new(right,center),new(right-4*scale,center+4*scale),accent,1.4f*scale);
+                dl.AddLine(new(namePos.X,start.Y+32*scale),new(right,start.Y+32*scale),0x19e8d3c9);
+                if (Controls.HintRequested() && ImGui.CalcTextSize(entry.Name).X > idX - 10 * scale - namePos.X)
+                    ImGui.SetTooltip(entry.Name);
+                if (choose) open(entry.Id);
+            }
+        }
+        finally { ImGui.PopStyleColor(2); ImGui.PopStyleVar(); }
+        ImGui.Dummy(new Vector2(0, 2 * scale));
     }
 }
