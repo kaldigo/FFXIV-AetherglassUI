@@ -1,6 +1,6 @@
 using Dalamud.Bindings.ImGui;
 
-namespace FamilyUI;
+namespace AetherglassUI;
 
 public sealed record CatalogEntry(string Id,string Name,string Group,string Keywords="",Action? DrawIcon=null);
 

@@ -1,6 +1,6 @@
 using Dalamud.Bindings.ImGui;
 
-namespace FamilyUI;
+namespace AetherglassUI;
 
 public sealed record ReportColumn(string Label,bool Stretch=false);
 

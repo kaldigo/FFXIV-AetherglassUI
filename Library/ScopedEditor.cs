@@ -1,6 +1,6 @@
 using Dalamud.Bindings.ImGui;
 
-namespace FamilyUI;
+namespace AetherglassUI;
 
 /// <summary>When an override starts, copy the effective value. Mutable values require a deep copy.</summary>
 public sealed class ScopedEditor<T>(Func<T,T> copy)

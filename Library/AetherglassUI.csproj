@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>Shared Dalamud window shell, settings controls and searchable pages.</Description>
+    <RepositoryUrl>https://github.com/kaldigo/FFXIV-AetherglassUI</RepositoryUrl>
     <Version>0.1.0</Version>
   </PropertyGroup>
 </Project>

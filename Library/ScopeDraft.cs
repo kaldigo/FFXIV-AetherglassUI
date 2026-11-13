@@ -1,4 +1,4 @@
-namespace FamilyUI;
+namespace AetherglassUI;
 
 /// <summary>Drafts stay bound to a named owner and revision until applied or discarded.</summary>
 public sealed class ScopeDraft<T>(Func<T,T> copy,Func<T,T,bool> equal)

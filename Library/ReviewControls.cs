@@ -1,6 +1,6 @@
 using Dalamud.Bindings.ImGui;
 
-namespace FamilyUI;
+namespace AetherglassUI;
 
 public enum StateTone { Ready, Pending, Attention, Error }
 public sealed record ReviewStatus(string Text,StateTone Tone=StateTone.Ready,Action? Review=null)

@@ -1,6 +1,6 @@
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
-namespace FamilyUI;
+namespace AetherglassUI;
 
 public sealed record Destination(string Id,string Label,string Glyph,Action Draw)
 {
@@ -49,7 +49,7 @@ public sealed class WindowShell
             }
             var active=pages.FirstOrDefault(x=>x.Id==Selected)??pages[0];
             ImGui.SetCursorScreenPos(p+new Vector2(3*scale,header+14*scale));
-            bool rail=ImGui.BeginChild("Family rail",new Vector2(railWidth-4*scale,Math.Max(1,bodyHeight-14*scale)),false);
+            bool rail=ImGui.BeginChild("AetherglassUI rail",new Vector2(railWidth-4*scale,Math.Max(1,bodyHeight-14*scale)),false);
             try
             {
                 if(rail) foreach(var page in pages)

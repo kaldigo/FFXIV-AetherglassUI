@@ -1,6 +1,6 @@
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
-namespace FamilyUI;
+namespace AetherglassUI;
 
 public enum FieldLayout { Flexible, Number, Switch, Color }
 public sealed record Setting(string Id,string Label,Action Draw,string Keywords="",string Detail="",Func<bool>? Visible=null)

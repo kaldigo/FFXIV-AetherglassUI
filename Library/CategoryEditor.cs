@@ -1,7 +1,7 @@
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 
-namespace FamilyUI;
+namespace AetherglassUI;
 
 public sealed record CategoryOption(string Name,string Group,IReadOnlyList<string> Members,string Keywords="",bool CanAdd=true,ImTextureID? Icon=null);
 
