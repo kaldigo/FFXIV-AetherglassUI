@@ -58,6 +58,16 @@ internal sealed class RenderForm(string? scene,string? output):Form
             io.AddMousePosEvent(235,100);
             if(frame>=12)io.AddMouseButtonEvent(0,frame==12);
         }
+        if(scene=="global-mode" && frame is >=3 and <=8)
+        {
+            io.AddMousePosEvent(frame<=5?68:64,frame<=5?136:311);
+            if(frame is 4 or 5 or 7 or 8)io.AddMouseButtonEvent(0,frame is 4 or 7);
+        }
+        if(scene is "rule-conflict" or "rule-cancel" or "rule-move")
+        {
+            if(frame is >=3 and <=5){io.AddMousePosEvent(330,348);if(frame>=4)io.AddMouseButtonEvent(0,frame==4);}
+            if(scene!="rule-conflict" && frame is >=7 and <=9){io.AddMousePosEvent(scene=="rule-move"?302:360,467);if(frame>=8)io.AddMouseButtonEvent(0,frame==8);}
+        }
         if(scene=="job-select" && frame==4)foreach(char c in "brd")io.AddInputCharacter(c);
         if((scene is "gender-select" or "job-select") && frame is 5 or 6 or 7)
         {
@@ -76,12 +86,12 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         if((scene is "folder-menu" or "design-menu" or "design-clone") && frame is 2 or 3)
         {
-            io.AddMousePosEvent(84,scene=="folder-menu"?178:244);
+            io.AddMousePosEvent(84,scene=="folder-menu"?212:278);
             io.AddMouseButtonEvent(1,frame==2);
         }
         if(scene=="design-clone" && frame is 5 or 6 or 7)
         {
-            io.AddMousePosEvent(132,287);
+            io.AddMousePosEvent(132,321);
             if(frame>=6)io.AddMouseButtonEvent(0,frame==6);
         }
         if(scene=="ownership-bypass" && frame is 2 or 3 or 4)
@@ -91,10 +101,10 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         if(scene=="folder-drag")
         {
-            if(frame is 1 or 2)io.AddMousePosEvent(85,211);
+            if(frame is 1 or 2)io.AddMousePosEvent(85,245);
             if(frame==2)io.AddMouseButtonEvent(0,true);
-            if(frame==3)io.AddMousePosEvent(105,210);
-            if(frame is 4 or 5)io.AddMousePosEvent(80,145);
+            if(frame==3)io.AddMousePosEvent(105,244);
+            if(frame is 4 or 5)io.AddMousePosEvent(80,179);
             if(frame==6)io.AddMouseButtonEvent(0,false);
         }
         if((scene is "clear-gear" or "clear-accessory") && frame is 5 or 6 or 7)
@@ -104,10 +114,18 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         ImGui.NewFrame();ImGui.SetNextWindowPos(Vector2.Zero);ImGui.SetNextWindowSize(io.DisplaySize);
         WindowShell.PushHostStyle();ImGui.Begin("Aetherloom",WindowShell.HostFlags|ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoMove);WindowShell.PopHostStyle();
-        if(frame is 1 or 2)layout.Show(scene switch{"gender-select" or "job-select" or "designed-for" or "intended-for" or "details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
+        if(frame is 1 or 2)layout.Show(scene switch{"gender-select" or "job-select" or "designed-for" or "intended-for" or "details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","rule-conflict" or "rule-cancel" or "rule-move" or "assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
             scene switch{"gender-select" or "designed-for"=>WardrobeMetadata.Gender,"job-select" or "intended-for"=>WardrobeMetadata.Intended,"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear" or "weapon-filter"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
-        if(++frame==(scene=="scroll-library"?17:scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter" or "gender-select" or "job-select"?9:6) && output!=null){
+        if(++frame==(scene=="scroll-library"?17:scene is "global-mode" or "rule-conflict" or "rule-move" or "rule-cancel"?12:scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter" or "gender-select" or "job-select"?9:6) && output!=null){
+            if(scene=="global-mode" && (fixture!.AssignmentMode || fixture.Title!="Moonlit Waltz"))
+                throw new InvalidOperationException("Switching designs must preserve global Manual mode.");
+            if(scene is "rule-conflict" or "rule-cancel" or "rule-move")
+            {
+                var owner=fixture!.RuleOwner("region:22|job:21");
+                if(owner==null || (owner==fixture.Selected)!=(scene=="rule-move"))
+                    throw new InvalidOperationException("Only an explicitly confirmed move may replace an assignment.");
+            }
             if(scene=="gender-select" && !fixture!.Tags.Contains("gender:Male"))
                 throw new InvalidOperationException("Selecting Male did not update the design.");
             if(scene=="job-select" && !fixture!.Tags.Contains("intended:Bard"))
@@ -122,7 +140,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
                 throw new InvalidOperationException("Design title switch did not enable the ownership bypass.");
             if(scene=="design-clone" && (fixture!.Title!="Highland Scout (copy)" ||
                 !fixture.Designs.Any(d=>d.Name=="Highland Scout" && d.Id!=fixture.Selected) ||
-                fixture.Assigned("Jobs").Count!=0))
+                fixture.DesignRules.Any()))
                 throw new InvalidOperationException("Cloning must select an independent, unassigned copy.");
             if(scene=="folder-drag" && !fixture!.Folders.Contains("[AL] Winter"))
                 throw new InvalidOperationException("Dropping Winter onto the root did not promote it.");
@@ -149,6 +167,8 @@ namespace Aetherloom
     {
         internal void ConfigureScene(string? scene)
         {
+            if(scene is "assignments" or "jobs" or "zones"){locationType="City or zone";rulePlace="city:500";ruleJob="job:21";}
+            if(scene is "rule-conflict" or "rule-move" or "rule-cancel"){locationType="Region";rulePlace="region:22";ruleJob="job:21";}
             if(scene is "tags" or "tag-select")newTag="Vi";
             if(scene=="filter-clear"){filter="Highland";onlyAvailable=true;}
             if(scene is not ("filters" or "filter-clear"))return;

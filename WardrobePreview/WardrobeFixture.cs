@@ -64,7 +64,7 @@ internal sealed class WardrobeFixture:IWardrobe
         foreach(var name in new[]{"Highland Scout","Rainy Afternoon","Winter Courier","Moonlit Waltz"})designs.Add((Guid.NewGuid(),name,["aetherloom","Winter","Travel"]));
         designs[0]=(designs[0].Id,designs[0].Name,["aetherloom","gender:Female","intended:Ranged DPS","classification:Cool","style:Casual","theme:Adventurer","color:Green","color:Brown","Winter","Travel"]);
         designs[1]=(designs[1].Id,designs[1].Name,["aetherloom","Casual","City"]);
-        Selected=designs[0].Id;assigned[("Jobs",1)]=Selected;assigned[("Zones",1)]=Selected;assigned[("Jobs",2)]=designs[1].Id;paths[Selected]="[AL] Adventuring";paths[designs[2].Id]="[AL] Adventuring/Winter";
+        Selected=designs[0].Id;rules["any|job:23"]=Selected;rules["region:22|job:21"]=designs[1].Id;paths[Selected]="[AL] Adventuring";paths[designs[2].Id]="[AL] Adventuring/Winter";
         using var samples=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("appearance-palette.bin")!;
         samples.ReadExactly(appearancePalette);
         using var stream=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("stains.tsv")!;
@@ -118,7 +118,7 @@ internal sealed class WardrobeFixture:IWardrobe
     {
         if(designs.RemoveAll(d=>d.Id==id)==0)return false;
         paths.Remove(id);
-        foreach(var entry in assigned.Where(a=>a.Value==id).ToArray())assigned.Remove(entry.Key);
+        foreach(var entry in rules.Where(a=>a.Value==id).ToArray())rules.Remove(entry.Key);
         if(Selected==id)Selected=designs.FirstOrDefault().Id;
         return true;
     }
@@ -152,12 +152,19 @@ internal sealed class WardrobeFixture:IWardrobe
     public bool HasCharacter=>true;
     private readonly HashSet<Guid> bypassed=[];
     public bool BypassOwnership {get=>bypassed.Contains(Selected);set{if(value)bypassed.Add(Selected);else bypassed.Remove(Selected);}}
-    public void ApplyToCharacter(){}
-    private readonly Dictionary<(string Type,uint Id),Guid> assigned=[];
-    public IEnumerable<(uint Id,string Name)> AssignmentOptions(string type)=>type=="Jobs"?[(1,"Bard (BRD)"),(2,"Dragoon (DRG)"),(3,"Warrior (WAR)")]:[(1,"Coerthas Central Highlands"),(2,"Old Gridania"),(3,"The Lavender Beds")];
-    public IReadOnlyCollection<uint> Assigned(string type)=>assigned.Where(p=>p.Key.Type==type && p.Value==Selected).Select(p=>p.Key.Id).ToArray();
-    public string? AssignmentOwner(string type,uint id)=>designs.FirstOrDefault(d=>d.Id==assigned.GetValueOrDefault((type,id))).Name;
-    public void Assign(string type,uint id,bool enable){if(enable)assigned[(type,id)]=Selected;else assigned.Remove((type,id));}
+    public void ApplyToCharacter(){AssignmentMode=false;}
+    public bool AssignmentMode{get;set;}=true;
+    private readonly Dictionary<string,Guid> rules=[];
+    public IEnumerable<string> DesignRules=>rules.Where(r=>r.Value==Selected).Select(r=>r.Key);
+    public string RuleLabel(string key)=>string.Join(" · ",key.Split('|').Select(k=>k switch{"any"=>"Any","region:22"=>"La Noscea","city:500"=>"Limsa Lominsa","job:21"=>"Warrior","job:23"=>"Bard",_=>k}));
+    public Guid? RuleOwner(string key)=>rules.TryGetValue(key,out var owner)?owner:null;
+    public string RuleNote(string key)=>key=="city:500|job:21"?"Takes priority over Rainy Afternoon (La Noscea · Warrior).":"";
+    public void SaveRule(string key,Guid? expected,bool remove){if(remove)rules.Remove(key);else rules[key]=Selected;}
+    public IEnumerable<(string Key,string Name)> RuleOptions(string type)=>type switch
+    {
+        "Job"=>[("any","Any job"),("job:21","Warrior"),("job:23","Bard"),("role:0","Tanks")],"Region"=>[("region:22","La Noscea")],
+        "City or zone"=>[("city:500","Limsa Lominsa")],_=>[("any","Anywhere")]
+    };
     public ISet<byte> FavoriteDyes{get;}=new HashSet<byte>{5,11,14,21,32};
     public void ToggleFavorite(byte id){if(!FavoriteDyes.Remove(id))FavoriteDyes.Add(id);}
     private readonly Dictionary<string,bool?> display=new(){["Weapon"]=true,["Hat"]=true,["Visor"]=false};
