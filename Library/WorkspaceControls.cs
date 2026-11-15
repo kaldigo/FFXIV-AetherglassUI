@@ -3,7 +3,7 @@ using Dalamud.Bindings.ImGui;
 
 namespace AetherglassUI;
 
-public readonly record struct Pane(string Id, float Weight, Action Draw, bool FixedWidth=false);
+public readonly record struct Pane(string Id, float Weight, Action Draw, bool FixedWidth=false, bool EdgeToEdge=false);
 public readonly record struct Picture(ImTextureID Texture, Vector2 Uv0, Vector2 Uv1)
 {
     public Picture(ImTextureID texture) : this(texture, Vector2.Zero, Vector2.One) { }
@@ -19,7 +19,12 @@ public static class WorkspaceControls
     public const uint Missing = 0xff817ef0;
     public static void Split(string id, params Pane[] panes)
     {
-        if (!ImGui.BeginTable(id, panes.Length, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.BordersInnerV)) return;
+        var inset=ImGui.GetStyle().CellPadding;
+        bool flush=panes.Any(p=>p.EdgeToEdge);
+        if(flush)ImGui.PushStyleVar(ImGuiStyleVar.CellPadding,Vector2.Zero);
+        bool visible=ImGui.BeginTable(id,panes.Length,ImGuiTableFlags.SizingStretchProp|ImGuiTableFlags.BordersInnerV);
+        if(flush)ImGui.PopStyleVar();
+        if(!visible)return;
         try
         {
             foreach (var pane in panes) ImGui.TableSetupColumn(pane.Id, pane.FixedWidth?ImGuiTableColumnFlags.WidthFixed:ImGuiTableColumnFlags.WidthStretch, pane.FixedWidth?pane.Weight*Scale:pane.Weight);
@@ -27,7 +32,8 @@ public static class WorkspaceControls
             foreach (var pane in panes)
             {
                 ImGui.TableNextColumn();
-                ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(10, 4) * Scale);
+                var padding=pane.EdgeToEdge?Vector2.Zero:new Vector2(10,4)*Scale+(flush?inset:Vector2.Zero);
+                ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding,padding);
                 bool show = ImGui.BeginChild(pane.Id, Vector2.Zero, false, ImGuiWindowFlags.AlwaysUseWindowPadding);
                 ImGui.PopStyleVar();
                 try { if (show) pane.Draw(); }
