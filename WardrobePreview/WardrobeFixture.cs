@@ -16,6 +16,7 @@ internal sealed class WardrobeFixture:IWardrobe
     public string Title=>designs.FirstOrDefault(d=>d.Id==Selected).Name??"";
     public string[] Tags=>designs.FirstOrDefault(d=>d.Id==Selected).Tags??[];
     public IReadOnlyList<string> KnownTags=>designs.SelectMany(d=>d.Tags).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    public IEnumerable<string> WeaponTerms(Guid id)=>["Bard","BRD"];
     public IEnumerable<string> JobTerms(Guid id)=>["Bard","BRD"];
     public string Message=>"";
     public bool ImportBusy=>false;
@@ -51,6 +52,7 @@ internal sealed class WardrobeFixture:IWardrobe
         }
         for(int i=0;i<3;i++)art[(uint)(120+i)]=Cut(items,587,528+i*83,60,60);
         foreach(var name in new[]{"Highland Scout","Rainy Afternoon","Winter Courier","Moonlit Waltz"})designs.Add((Guid.NewGuid(),name,["aetherloom","Winter","Travel"]));
+        designs[0]=(designs[0].Id,designs[0].Name,["aetherloom","gender:Female","intended:Ranged DPS","classification:Cool","style:Casual","theme:Adventurer","color:Green","color:Brown","Winter","Travel"]);
         designs[1]=(designs[1].Id,designs[1].Name,["aetherloom","Casual","City"]);
         Selected=designs[0].Id;assigned[("Jobs",1)]=Selected;assigned[("Zones",1)]=Selected;assigned[("Jobs",2)]=designs[1].Id;paths[Selected]="[AL] Adventuring";paths[designs[2].Id]="[AL] Adventuring/Winter";
         using var samples=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("appearance-palette.bin")!;
@@ -110,7 +112,11 @@ internal sealed class WardrobeFixture:IWardrobe
         if(Selected==id)Selected=designs.FirstOrDefault().Id;
         return true;
     }
-    public void Tag(string tag,bool add){var i=designs.FindIndex(x=>x.Id==Selected);designs[i]=(Selected,Title,add?[..Tags,tag]:Tags.Where(x=>x!=tag).ToArray());}
+    public void EditTags(string[] remove,string? add)
+    {
+        var i=designs.FindIndex(d=>d.Id==Selected);
+        designs[i]=(Selected,Title,Tags.Except(remove,StringComparer.OrdinalIgnoreCase).Concat(add==null?[]:[add]).ToArray());
+    }
     public IEnumerable<WardrobeSlot> Slots(bool accessories)=>rows.Where(x=>accessories==(x.Key is "Ears" or "Neck" or "Wrists" or "RFinger" or "LFinger"));
     public IEnumerable<WardrobeItem> Catalog(string key){
         var item=rows.First(r=>r.Key==key).Item;yield return item;

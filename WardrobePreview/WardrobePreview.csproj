@@ -13,6 +13,8 @@
     <EmbeddedResource Include="appearance-palette.bin" LogicalName="appearance-palette.bin" />
     <ProjectReference Include="../Library/AetherglassUI.csproj" />
     <Compile Include="../Preview/GlSurface.cs" Link="GlSurface.cs" />
+    <Compile Include="$(WardrobeSource)/Aetherloom/WardrobeMetadata.cs" Link="WardrobeMetadata.cs" />
+    <Compile Include="$(WardrobeSource)/Aetherloom/WardrobeLayout.Details.cs" Link="WardrobeLayout.Details.cs" />
     <Compile Include="$(WardrobeSource)/Aetherloom/WardrobeLayout.cs" Link="WardrobeLayout.cs" />
     <EmbeddedResource Include="$(WardrobeSource)/docs/wardrobe/gear.png" LogicalName="gear.png" />
     <EmbeddedResource Include="$(WardrobeSource)/docs/wardrobe/appearance.png" LogicalName="appearance.png" />
