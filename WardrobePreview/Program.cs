@@ -55,7 +55,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         if(scene=="scroll-library" && frame is >=11 and <=13)
         {
-            io.AddMousePosEvent(220,100);
+            io.AddMousePosEvent(235,100);
             if(frame>=12)io.AddMouseButtonEvent(0,frame==12);
         }
         if(scene=="weapon-filter" && frame is 3 or 4 or 5)
