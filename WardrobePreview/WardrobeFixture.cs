@@ -95,6 +95,7 @@ internal sealed class WardrobeFixture:IWardrobe
         Selected=Guid.NewGuid();
         designs.Add((Selected,name,[..entry.Tags]));
         paths[Selected]=entry.Folder;
+        if(bypassed.Contains(source))bypassed.Add(Selected);
     }
     public bool RenameDesign(Guid id,string name)
     {
@@ -133,6 +134,9 @@ internal sealed class WardrobeFixture:IWardrobe
     public bool GroupEnabled(string group)=>enabled.Contains(group);
     public void SetGroupEnabled(string group,bool value){if(value)enabled.Add(group);else enabled.Remove(group);}
     public bool HasCharacter=>true;
+    private readonly HashSet<Guid> bypassed=[];
+    public bool BypassOwnership {get=>bypassed.Contains(Selected);set{if(value)bypassed.Add(Selected);else bypassed.Remove(Selected);}}
+    public void ApplyToCharacter(){}
     private readonly Dictionary<(string Type,uint Id),Guid> assigned=[];
     public IEnumerable<(uint Id,string Name)> AssignmentOptions(string type)=>type=="Jobs"?[(1,"Bard (BRD)"),(2,"Dragoon (DRG)"),(3,"Warrior (WAR)")]:[(1,"Coerthas Central Highlands"),(2,"Old Gridania"),(3,"The Lavender Beds")];
     public IReadOnlyCollection<uint> Assigned(string type)=>assigned.Where(p=>p.Key.Type==type && p.Value==Selected).Select(p=>p.Key.Id).ToArray();

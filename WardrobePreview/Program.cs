@@ -57,6 +57,11 @@ internal sealed class RenderForm(string? scene,string? output):Form
             io.AddMousePosEvent(132,324);
             if(frame>=6)io.AddMouseButtonEvent(0,frame==6);
         }
+        if(scene=="ownership-bypass" && frame is 2 or 3 or 4)
+        {
+            io.AddMousePosEvent(870,67);
+            if(frame>=3)io.AddMouseButtonEvent(0,frame==3);
+        }
         if(scene=="folder-drag")
         {
             if(frame is 1 or 2)io.AddMousePosEvent(85,247);
@@ -76,6 +81,8 @@ internal sealed class RenderForm(string? scene,string? output):Form
             scene switch{"import"=>"import","tags"=>"add-tag","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
         if(++frame==(scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory"?9:6) && output!=null){
+            if(scene=="ownership-bypass" && !fixture!.BypassOwnership)
+                throw new InvalidOperationException("Design title switch did not enable the ownership bypass.");
             if(scene=="design-clone" && (fixture!.Title!="Highland Scout (copy)" ||
                 !fixture.Designs.Any(d=>d.Name=="Highland Scout" && d.Id!=fixture.Selected) ||
                 fixture.Assigned("Jobs").Count!=0))
