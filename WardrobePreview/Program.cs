@@ -47,10 +47,15 @@ internal sealed class RenderForm(string? scene,string? output):Form
     {
         if(surface==null||layout==null)return;
         var io=ImGui.GetIO();io.DisplaySize=new(ClientSize.Width,ClientSize.Height);io.DeltaTime=.025f;
-        if((scene is "folder-menu" or "design-menu") && frame is 2 or 3)
+        if((scene is "folder-menu" or "design-menu" or "design-clone") && frame is 2 or 3)
         {
-            io.AddMousePosEvent(84,scene=="design-menu"?281:215);
+            io.AddMousePosEvent(84,scene=="folder-menu"?215:281);
             io.AddMouseButtonEvent(1,frame==2);
+        }
+        if(scene=="design-clone" && frame is 5 or 6 or 7)
+        {
+            io.AddMousePosEvent(132,324);
+            if(frame>=6)io.AddMouseButtonEvent(0,frame==6);
         }
         if(scene=="folder-drag")
         {
@@ -70,7 +75,11 @@ internal sealed class RenderForm(string? scene,string? output):Form
         if(frame is 1 or 2)layout.Show(scene switch{"hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
             scene switch{"import"=>"import","tags"=>"add-tag","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
-        if(++frame==(scene is "folder-drag" or "clear-gear" or "clear-accessory"?9:6) && output!=null){
+        if(++frame==(scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory"?9:6) && output!=null){
+            if(scene=="design-clone" && (fixture!.Title!="Highland Scout (copy)" ||
+                !fixture.Designs.Any(d=>d.Name=="Highland Scout" && d.Id!=fixture.Selected) ||
+                fixture.Assigned("Jobs").Count!=0))
+                throw new InvalidOperationException("Cloning must select an independent, unassigned copy.");
             if(scene=="folder-drag" && !fixture!.Folders.Contains("[AL] Winter"))
                 throw new InvalidOperationException("Dropping Winter onto the root did not promote it.");
             if(scene is "clear-gear" or "clear-accessory")

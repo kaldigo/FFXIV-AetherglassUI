@@ -89,6 +89,13 @@ internal sealed class WardrobeFixture:IWardrobe
         return folders.Remove(path);
     }
     public void MoveDesign(Guid id,string folder)=>paths[id]=folder;
+    public void CloneDesign(Guid source,string name)
+    {
+        var entry=Designs.Single(d=>d.Id==source);
+        Selected=Guid.NewGuid();
+        designs.Add((Selected,name,[..entry.Tags]));
+        paths[Selected]=entry.Folder;
+    }
     public bool RenameDesign(Guid id,string name)
     {
         var index=designs.FindIndex(d=>d.Id==id);if(index<0)return false;
