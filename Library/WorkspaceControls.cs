@@ -191,12 +191,32 @@ public static class WorkspaceControls
     {
         ImGui.EndPopup();PopPickerStyle();
     }
+    public static bool CloseButton(string id,float side,string hint)
+    {
+        bool clicked=ImGui.Button("###"+id,new Vector2(side));
+        var center=(ImGui.GetItemRectMin()+ImGui.GetItemRectMax())*.5f;
+        float extent=side*.15f;
+        var dl=ImGui.GetWindowDrawList();
+        var diagonal=new Vector2(extent);
+        dl.AddLine(center-diagonal,center+diagonal,ImGui.GetColorU32(ImGuiCol.Text),1.5f*Scale);
+        diagonal.X=-extent;
+        dl.AddLine(center-diagonal,center+diagonal,ImGui.GetColorU32(ImGuiCol.Text),1.5f*Scale);
+        if(ImGui.IsItemHovered())ImGui.SetTooltip(hint);
+        return clicked;
+    }
+
     public static void PickerHeading(string title)
     {
         var right=ImGui.GetCursorPosX()+ImGui.GetContentRegionAvail().X;
-        ImGui.AlignTextToFramePadding();ImGui.TextUnformatted(title);
-        ImGui.SameLine();ImGui.SetCursorPosX(right-24*Scale);
-        if(ImGui.Button("\u00d7##close",new Vector2(24*Scale)))ImGui.CloseCurrentPopup();
+        var origin=ImGui.GetCursorScreenPos();
+        float height=24*Scale;
+        var end=origin+new Vector2(ImGui.GetContentRegionAvail().X-height-5*Scale,height);
+        var dl=ImGui.GetWindowDrawList();
+        dl.PushClipRect(origin,end,true);
+        dl.AddText(origin+new Vector2(0,(height-ImGui.GetTextLineHeight())/2),ImGui.GetColorU32(ImGuiCol.Text),title);
+        dl.PopClipRect();
+        ImGui.SetCursorPosX(right-height);
+        if(CloseButton("close",height,"Close picker"))ImGui.CloseCurrentPopup();
         ImGui.Separator();
     }
 

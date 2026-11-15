@@ -116,8 +116,7 @@ public sealed class WindowShell
             if(Close!=null)
             {
                 ImGui.SetCursorScreenPos(p+new Vector2(size.X-42*scale,10*scale));
-                if(ImGui.Button("×###close",new Vector2(30*scale,30*scale)))Close();
-                if(ImGui.IsItemHovered())ImGui.SetTooltip("Close window");
+                if(WorkspaceControls.CloseButton("close",30*scale,"Close window"))Close();
             }
             var active=pages.FirstOrDefault(x=>x.Id==Selected)??pages[0];
             if (ShowIconRail)

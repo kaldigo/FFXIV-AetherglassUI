@@ -47,9 +47,9 @@ internal sealed class RenderForm(string? scene,string? output):Form
     {
         if(surface==null||layout==null)return;
         var io=ImGui.GetIO();io.DisplaySize=new(ClientSize.Width,ClientSize.Height);io.DeltaTime=.025f;
-        if(scene=="folder-menu" && frame is 2 or 3)
+        if((scene is "folder-menu" or "design-menu") && frame is 2 or 3)
         {
-            io.AddMousePosEvent(84,215);
+            io.AddMousePosEvent(84,scene=="design-menu"?281:215);
             io.AddMouseButtonEvent(1,frame==2);
         }
         if(scene=="folder-drag")
@@ -60,14 +60,26 @@ internal sealed class RenderForm(string? scene,string? output):Form
             if(frame is 4 or 5)io.AddMousePosEvent(80,181);
             if(frame==6)io.AddMouseButtonEvent(0,false);
         }
+        if((scene is "clear-gear" or "clear-accessory") && frame is 5 or 6 or 7)
+        {
+            io.AddMousePosEvent(430,scene=="clear-gear"?473:357);
+            if(frame>=6)io.AddMouseButtonEvent(0,frame==6);
+        }
         ImGui.NewFrame();ImGui.SetNextWindowPos(Vector2.Zero);ImGui.SetNextWindowSize(io.DisplaySize);
         WindowShell.PushHostStyle();ImGui.Begin("Aetherloom",WindowShell.HostFlags|ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoMove);WindowShell.PopHostStyle();
-        if(frame is 1 or 2)layout.Show(scene switch{"hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories"=>"Accessories","assignments"=>"Assignments",_=>"Gear"},
-            scene switch{"dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items"=>"Body","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
+        if(frame is 1 or 2)layout.Show(scene switch{"hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
+            scene switch{"tags"=>"add-tag","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
-        if(++frame==(scene=="folder-drag"?9:6) && output!=null){
+        if(++frame==(scene is "folder-drag" or "clear-gear" or "clear-accessory"?9:6) && output!=null){
             if(scene=="folder-drag" && !fixture!.Folders.Contains("[AL] Winter"))
                 throw new InvalidOperationException("Dropping Winter onto the root did not promote it.");
+            if(scene is "clear-gear" or "clear-accessory")
+            {
+                bool accessory=scene=="clear-accessory";
+                var slot=fixture!.Slots(accessory).Single(s=>s.Key==(accessory?"Ears":"Body"));
+                if(slot.Item.Id!=0 || slot.First!=0 || slot.Second!=0 || !slot.Apply)
+                    throw new InvalidOperationException("Empty slot should clear the item and both dyes and enable application.");
+            }
             surface.Capture(output,ClientSize.Width,ClientSize.Height);BeginInvoke(Close);}
     }
     protected override void OnMouseMove(MouseEventArgs e){if(surface!=null)ImGui.GetIO().AddMousePosEvent(e.X,e.Y);}

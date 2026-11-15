@@ -13,8 +13,10 @@ internal sealed class WardrobeFixture:IWardrobe
     public WardrobeLayout Layout=null!;
     public ImTextureID? HeaderMark {get;}
     public Guid Selected{get;private set;}
-    public string Title=>designs.First(d=>d.Id==Selected).Name;
-    public string[] Tags=>designs.First(d=>d.Id==Selected).Tags;
+    public string Title=>designs.FirstOrDefault(d=>d.Id==Selected).Name??"";
+    public string[] Tags=>designs.FirstOrDefault(d=>d.Id==Selected).Tags??[];
+    public IReadOnlyList<string> KnownTags=>designs.SelectMany(d=>d.Tags).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    public IEnumerable<string> JobTerms(Guid id)=>["Bard","BRD"];
     public string Message=>"";
     private readonly List<string> folders=["[AL] Adventuring","[AL] Adventuring/Winter"];
     private readonly Dictionary<Guid,string> paths=[];
@@ -46,7 +48,8 @@ internal sealed class WardrobeFixture:IWardrobe
         }
         for(int i=0;i<3;i++)art[(uint)(120+i)]=Cut(items,587,528+i*83,60,60);
         foreach(var name in new[]{"Highland Scout","Rainy Afternoon","Winter Courier","Moonlit Waltz"})designs.Add((Guid.NewGuid(),name,["aetherloom","Winter","Travel"]));
-        Selected=designs[0].Id;paths[Selected]="[AL] Adventuring";paths[designs[2].Id]="[AL] Adventuring/Winter";
+        designs[1]=(designs[1].Id,designs[1].Name,["aetherloom","Casual","City"]);
+        Selected=designs[0].Id;assigned[("Jobs",1)]=Selected;assigned[("Zones",1)]=Selected;assigned[("Jobs",2)]=designs[1].Id;paths[Selected]="[AL] Adventuring";paths[designs[2].Id]="[AL] Adventuring/Winter";
         using var samples=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("appearance-palette.bin")!;
         samples.ReadExactly(appearancePalette);
         using var stream=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("stains.tsv")!;
@@ -83,14 +86,28 @@ internal sealed class WardrobeFixture:IWardrobe
         return folders.Remove(path);
     }
     public void MoveDesign(Guid id,string folder)=>paths[id]=folder;
+    public bool RenameDesign(Guid id,string name)
+    {
+        var index=designs.FindIndex(d=>d.Id==id);if(index<0)return false;
+        designs[index]=(id,name,designs[index].Tags);return true;
+    }
+    public bool DeleteDesign(Guid id)
+    {
+        if(designs.RemoveAll(d=>d.Id==id)==0)return false;
+        paths.Remove(id);
+        foreach(var entry in assigned.Where(a=>a.Value==id).ToArray())assigned.Remove(entry.Key);
+        if(Selected==id)Selected=designs.FirstOrDefault().Id;
+        return true;
+    }
     public void Tag(string tag,bool add){var i=designs.FindIndex(x=>x.Id==Selected);designs[i]=(Selected,Title,add?[..Tags,tag]:Tags.Where(x=>x!=tag).ToArray());}
     public IEnumerable<WardrobeSlot> Slots(bool accessories)=>rows.Where(x=>accessories==(x.Key is "Ears" or "Neck" or "Wrists" or "RFinger" or "LFinger"));
     public IEnumerable<WardrobeItem> Catalog(string key){
         var item=rows.First(r=>r.Key==key).Item;yield return item;
+        if(key!="Body")yield break;
         foreach(var (name,id) in new[]{("Highland Smock",22u),("Sky Pirate’s Jacket",23u),("Adventuring Sweater",25u)})yield return new(id,name,key=="Body"?(id==25?122u:id+98):item.Icon,2);
     }
     private void Change(string key,Func<WardrobeSlot,WardrobeSlot> change){int i=rows.FindIndex(x=>x.Key==key);rows[i]=change(rows[i]);}
-    public void SetItem(string key,uint id)=>Change(key,s=>s with{Item=Catalog(key).First(i=>i.Id==id)});
+    public void SetItem(string key,uint id)=>Change(key,s=>s with{Item=id==0?new(0,"Empty",0,0):Catalog(key).First(i=>i.Id==id),First=id==0?(byte)0:s.First,Second=id==0?(byte)0:s.Second,Apply=true});
     public void SetDye(string key,int channel,byte id)=>Change(key,s=>channel==0?s with{First=id}:s with{Second=id});
     public void SetApply(string key,bool apply)=>Change(key,s=>s with{Apply=apply});
     public void MainHand(string? remove){if(remove!=null)rows.RemoveAll(x=>x.Key==remove);else rows.Insert(1,new("MainHand/"+Guid.NewGuid(),"Main hand",new(0,"Empty",0,0),0,0,false));}
@@ -106,17 +123,18 @@ internal sealed class WardrobeFixture:IWardrobe
     public bool GroupEnabled(string group)=>enabled.Contains(group);
     public void SetGroupEnabled(string group,bool value){if(value)enabled.Add(group);else enabled.Remove(group);}
     public bool HasCharacter=>true;
-    private readonly Dictionary<string,HashSet<uint>> assigned=new(){["Jobs"]=[1],["Zones"]=[1]};
-    public IEnumerable<(uint Id,string Name)> AssignmentOptions(string type)=>type=="Jobs"?[(1,"Bard"),(2,"Dragoon")]:[(1,"Coerthas Central Highlands"),(2,"Old Gridania")];
-    public IReadOnlyCollection<uint> Assigned(string type)=>assigned[type];
-    public void Assign(string type,uint id,bool enable){if(enable)assigned[type].Add(id);else assigned[type].Remove(id);}
+    private readonly Dictionary<(string Type,uint Id),Guid> assigned=[];
+    public IEnumerable<(uint Id,string Name)> AssignmentOptions(string type)=>type=="Jobs"?[(1,"Bard (BRD)"),(2,"Dragoon (DRG)"),(3,"Warrior (WAR)")]:[(1,"Coerthas Central Highlands"),(2,"Old Gridania"),(3,"The Lavender Beds")];
+    public IReadOnlyCollection<uint> Assigned(string type)=>assigned.Where(p=>p.Key.Type==type && p.Value==Selected).Select(p=>p.Key.Id).ToArray();
+    public string? AssignmentOwner(string type,uint id)=>designs.FirstOrDefault(d=>d.Id==assigned.GetValueOrDefault((type,id))).Name;
+    public void Assign(string type,uint id,bool enable){if(enable)assigned[(type,id)]=Selected;else assigned.Remove((type,id));}
     public ISet<byte> FavoriteDyes{get;}=new HashSet<byte>{5,11,14,21,32};
     public void ToggleFavorite(byte id){if(!FavoriteDyes.Remove(id))FavoriteDyes.Add(id);}
     private readonly Dictionary<string,bool?> display=new(){["Weapon"]=true,["Hat"]=true,["Visor"]=false};
     public bool? DisplayOption(string key)=>display.GetValueOrDefault(key);
     public void ToggleDisplay(string key)=>display[key]=key=="Draw"?DisplayOption(key)!=true:DisplayOption(key) switch{null=>true,true=>false,false=>null};
     public void ResetCamera(){}
-    public void PreviewOptions(){}
+    public void WeaponSelector(){}
     public void DrawPreview(){
         uint id=Layout.Tab switch{"Appearance"=>101u,"Accessories"=>102u,_=>100u};
         float aspect=id==102?2f/3:.735f;
