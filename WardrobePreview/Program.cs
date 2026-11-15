@@ -47,6 +47,11 @@ internal sealed class RenderForm(string? scene,string? output):Form
     {
         if(surface==null||layout==null)return;
         var io=ImGui.GetIO();io.DisplaySize=new(ClientSize.Width,ClientSize.Height);io.DeltaTime=.025f;
+        if(scene=="weapon-filter" && frame is 3 or 4 or 5)
+        {
+            io.AddMousePosEvent(510,247);
+            if(frame>=4)io.AddMouseButtonEvent(0,frame==4);
+        }
         if((scene is "filter-clear" or "tag-select") && frame is 3 or 4 or 5)
         {
             io.AddMousePosEvent(scene=="filter-clear"?277:480,scene=="filter-clear"?446:389);
@@ -83,9 +88,11 @@ internal sealed class RenderForm(string? scene,string? output):Form
         ImGui.NewFrame();ImGui.SetNextWindowPos(Vector2.Zero);ImGui.SetNextWindowSize(io.DisplaySize);
         WindowShell.PushHostStyle();ImGui.Begin("Aetherloom",WindowShell.HostFlags|ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoMove);WindowShell.PopHostStyle();
         if(frame is 1 or 2)layout.Show(scene switch{"details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
-            scene switch{"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
+            scene switch{"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear" or "weapon-filter"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
-        if(++frame==(scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory"?9:6) && output!=null){
+        if(++frame==(scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter"?9:6) && output!=null){
+            if(scene=="weapon-filter" && fixture!.WeaponTermRequests==0)
+                throw new InvalidOperationException("The weapon job dropdown did not query configured weapons.");
             if(scene=="filter-clear" && !layout.FilterClearPassed)
                 throw new InvalidOperationException("Clearing filters must preserve the search text.");
             if(scene=="tag-select" && !fixture!.Tags.Contains("style:Vintage"))

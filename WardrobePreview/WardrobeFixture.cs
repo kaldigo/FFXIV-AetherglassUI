@@ -16,7 +16,12 @@ internal sealed class WardrobeFixture:IWardrobe
     public string Title=>designs.FirstOrDefault(d=>d.Id==Selected).Name??"";
     public string[] Tags=>designs.FirstOrDefault(d=>d.Id==Selected).Tags??[];
     public IReadOnlyList<string> KnownTags=>designs.SelectMany(d=>d.Tags).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-    public IEnumerable<string> WeaponTerms(Guid id)=>["Bard","BRD"];
+    public int WeaponTermRequests {get;private set;}
+    public IEnumerable<string> WeaponTerms(Guid id)
+    {
+        WeaponTermRequests++;
+        return ["Bard","BRD"];
+    }
     public IEnumerable<string> JobTerms(Guid id)=>["Bard","BRD"];
     public string Message=>"";
     public bool ImportBusy=>false;
