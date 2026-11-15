@@ -7,3 +7,4 @@ This Windows preview renders Aetherloom’s WardrobeLayout with AetherglassUI co
 Scenes are gear, accessories, appearance, items, dye, hair, paint, and assignments. Omit the output path to explore the window. The layout, popups and shell are real ImGui controls. The desktop fixture supplies sample inventory and static character and item art from the approved mockups. The game supplies character rendering, game icons, item availability and catalog data.
 
 The renders folder contains captures at 1250 × 760. Original design references live under docs/wardrobe in Aetherloom.
+Set WARDROBE_PREVIEW_WIDTH to change the capture width. The gear-wide capture uses 1500 pixels for comparison with the default 1250 pixels.

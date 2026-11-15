@@ -30,14 +30,20 @@ public sealed class WindowShell
         {
             var vertex = vertices[i];
             var uv = Vector2.Clamp((vertex.Pos - origin) / size, Vector2.Zero, Vector2.One);
-            var top = Vector3.Lerp(new(22,45,63), new(42,41,62), uv.X);
-            var bottom = Vector3.Lerp(new(33,43,62), new(53,38,61), uv.X);
-            var rgb = Vector3.Lerp(top, bottom, uv.Y);
+            var rgb = BackdropColor(uv);
             vertex.Col = (vertex.Col & 0xff000000) | (uint)rgb.X | ((uint)rgb.Y << 8) | ((uint)rgb.Z << 16);
             vertices[i] = vertex;
         }
     }
 
+    public static Vector3 BackdropColor(Vector2 uv)
+    {
+        var top = Vector3.Lerp(new(22,45,63), new(42,41,62), uv.X);
+        var bottom = Vector3.Lerp(new(33,43,62), new(53,38,61), uv.X);
+        return Vector3.Lerp(top, bottom, uv.Y);
+    }
+
+    public bool EdgeToEdgeBody { get; set; }
     public bool ShowIconRail { get; set; } = true;
     public bool ShowPageHeading { get; set; } = true;
     public Action? Close {get;set;}
@@ -138,10 +144,10 @@ public sealed class WindowShell
             Selected=active.Id;
             var current = subpages.Count == 0 ? active : subpages[^1];
             var bodyId = active.Id + string.Concat(subpages.Select(page => "/" + page.Id));
-            float pad=(size.X<410*scale?9:18)*scale;
-            ImGui.SetCursorScreenPos(p+new Vector2(railWidth,header+(size.X<=410*scale?12:16)*scale));
+            float pad=EdgeToEdgeBody?0:(size.X<410*scale?9:18)*scale;
+            ImGui.SetCursorScreenPos(p+new Vector2(railWidth,header+(EdgeToEdgeBody?0:size.X<=410*scale?12:16)*scale));
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding,new Vector2(pad,0));
-            bool body=ImGui.BeginChild("Workspace###"+bodyId,new Vector2(Math.Max(1,size.X-railWidth),Math.Max(1,bodyHeight-20*scale)),false,ImGuiWindowFlags.AlwaysUseWindowPadding);
+            bool body=ImGui.BeginChild("Workspace###"+bodyId,new Vector2(Math.Max(1,size.X-railWidth),Math.Max(1,bodyHeight-(EdgeToEdgeBody?0:20*scale))),false,ImGuiWindowFlags.AlwaysUseWindowPadding|(EdgeToEdgeBody?ImGuiWindowFlags.NoScrollbar|ImGuiWindowFlags.NoScrollWithMouse:0));
             ImGui.PopStyleVar();
             try
             {

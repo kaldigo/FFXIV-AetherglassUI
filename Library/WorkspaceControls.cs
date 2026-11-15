@@ -3,7 +3,7 @@ using Dalamud.Bindings.ImGui;
 
 namespace AetherglassUI;
 
-public readonly record struct Pane(string Id, float Weight, Action Draw);
+public readonly record struct Pane(string Id, float Weight, Action Draw, bool FixedWidth=false);
 public readonly record struct Picture(ImTextureID Texture, Vector2 Uv0, Vector2 Uv1)
 {
     public Picture(ImTextureID texture) : this(texture, Vector2.Zero, Vector2.One) { }
@@ -22,7 +22,7 @@ public static class WorkspaceControls
         if (!ImGui.BeginTable(id, panes.Length, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.BordersInnerV)) return;
         try
         {
-            foreach (var pane in panes) ImGui.TableSetupColumn(pane.Id, ImGuiTableColumnFlags.WidthStretch, pane.Weight);
+            foreach (var pane in panes) ImGui.TableSetupColumn(pane.Id, pane.FixedWidth?ImGuiTableColumnFlags.WidthFixed:ImGuiTableColumnFlags.WidthStretch, pane.FixedWidth?pane.Weight*Scale:pane.Weight);
             ImGui.TableNextRow();
             foreach (var pane in panes)
             {
@@ -65,7 +65,27 @@ public static class WorkspaceControls
         float radius=round?size.X/2:4*Scale;
         dl.AddRectFilled(p,p+size,rgba,radius);
         dl.AddRect(p,p+size,selected?Accent:Border,radius,ImDrawFlags.None,selected?3:1);
+        if(selected && side>=22)
+        {
+            var ink=((rgba&255)*299+((rgba>>8)&255)*587+((rgba>>16)&255)*114)>145000?0xff202022u:0xfffafafau;
+            dl.AddLine(p+size*.28f,p+new Vector2(size.X*.44f,size.Y*.62f),ink,2*Scale);
+            dl.AddLine(p+new Vector2(size.X*.44f,size.Y*.62f),p+new Vector2(size.X*.75f,size.Y*.32f),ink,2*Scale);
+        }
         if(ImGui.IsItemHovered()) ImGui.SetTooltip(label);
+        return clicked;
+    }
+
+    public static bool RoundAction(string label,bool active,Action<ImDrawListPtr,Vector2,float,uint> glyph)
+    {
+        var side=30*Scale;
+        var p=ImGui.GetCursorScreenPos();
+        bool clicked=ImGui.InvisibleButton(label,new Vector2(side));
+        var center=p+new Vector2(side/2);
+        var dl=ImGui.GetWindowDrawList();
+        dl.AddCircleFilled(center,side*.46f,active?0xff484737u:0xff302c28u);
+        dl.AddCircle(center,side*.46f,ImGui.IsItemHovered()?0xffe7dfbeu:active?0xff90bad2u:0xff776c66u,32,1.6f*Scale);
+        glyph(dl,center,side,active?0xfff4eee3u:0xffc2b9afu);
+        if(ImGui.IsItemHovered())ImGui.SetTooltip(label);
         return clicked;
     }
 
@@ -94,6 +114,20 @@ public static class WorkspaceControls
         ImGui.GetWindowDrawList().AddRect(p,p+size,selected?Accent:Border,4,ImDrawFlags.None,selected?2:1);
         if(ImGui.IsItemHovered()) ImGui.SetTooltip(label);
         return clicked;
+    }
+
+    // Preserve proportions while filling the pane. Report the uncropped bounds for backdrop sampling.
+    public static void FillViewport(string id,Picture picture,float aspect,Action<Vector2,Vector2> input)
+    {
+        var size=ImGui.GetContentRegionAvail();
+        if(size.X<1 || size.Y<1 || aspect<=0)return;
+        var full=new Vector2(Math.Max(size.X,size.Y*aspect),Math.Max(size.Y,size.X/aspect));
+        var inset=(full-size)/2;
+        var uv=(picture.Uv1-picture.Uv0)*inset/full;
+        var origin=ImGui.GetCursorScreenPos();
+        ImGui.InvisibleButton(id,size,ImGuiButtonFlags.MouseButtonLeft|ImGuiButtonFlags.MouseButtonRight);
+        new Picture(picture.Texture,picture.Uv0+uv,picture.Uv1-uv).Paint(origin,origin+size);
+        input(origin-inset,origin+size+inset);
     }
 
     public static void Viewport(string id,Picture picture,float aspect,Action input,float reservedHeight=0)

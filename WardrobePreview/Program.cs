@@ -24,7 +24,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
     private readonly System.Windows.Forms.Timer timer=new(){Interval=25};
     protected override unsafe void OnLoad(EventArgs e)
     {
-        base.OnLoad(e); Text="AetherglassUI · Aetherloom";ClientSize=new(1250,760);
+        base.OnLoad(e); Text="AetherglassUI · Aetherloom";ClientSize=new(int.TryParse(Environment.GetEnvironmentVariable("WARDROBE_PREVIEW_WIDTH"),out var width)?width:1250,760);
         SetStyle(ControlStyles.UserPaint|ControlStyles.Opaque|ControlStyles.AllPaintingInWmPaint,true);
         ImGui.CreateContext();var io=ImGui.GetIO();io.IniFilename=null;
         io.Fonts.AddFontFromFileTTF(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts),"segoeui.ttf"),16);

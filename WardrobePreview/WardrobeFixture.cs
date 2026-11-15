@@ -78,9 +78,14 @@ internal sealed class WardrobeFixture:IWardrobe
     public void Assign(string type,uint id,bool enable){if(enable)assigned[type].Add(id);else assigned[type].Remove(id);}
     public ISet<byte> FavoriteDyes{get;}=new HashSet<byte>{5,11,14,21,32};
     public void ToggleFavorite(byte id){if(!FavoriteDyes.Remove(id))FavoriteDyes.Add(id);}
+    private readonly HashSet<string> display=["Weapon","Hat","VieraEars"];
+    public bool DisplayOption(string key)=>display.Contains(key);
+    public void ToggleDisplay(string key){if(!display.Remove(key))display.Add(key);}
+    public void ResetCamera(){}
+    public void PreviewOptions(){}
     public void DrawPreview(){
         uint id=Layout.Tab switch{"Appearance"=>101u,"Accessories"=>102u,_=>100u};
-        WorkspaceControls.Viewport("preview",art[id],id==102?2f/3:.735f,()=>{},30);
-        ImGui.TextDisabled("Left-drag to rotate, right-drag to pan, scroll to zoom.");
+        float aspect=id==102?2f/3:.735f;
+        WorkspaceControls.FillViewport("preview",art[id],aspect,(_,_)=>{});
     }
 }
