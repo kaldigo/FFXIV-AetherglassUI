@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <StartupObject>Program</StartupObject>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WardrobeSource Condition="'$(WardrobeSource)' == ''">../../Aetherloom</WardrobeSource>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Library/AetherglassUI.csproj" />
+    <Compile Include="../Preview/GlSurface.cs" Link="GlSurface.cs" />
+    <Compile Include="$(WardrobeSource)/Aetherloom/WardrobeLayout.cs" Link="WardrobeLayout.cs" />
+    <EmbeddedResource Include="$(WardrobeSource)/docs/wardrobe/gear.png" LogicalName="gear.png" />
+    <EmbeddedResource Include="$(WardrobeSource)/docs/wardrobe/appearance.png" LogicalName="appearance.png" />
+    <EmbeddedResource Include="$(WardrobeSource)/docs/wardrobe/accessories.png" LogicalName="accessories.png" />
+    <EmbeddedResource Include="$(WardrobeSource)/docs/wardrobe/appearance-pickers.png" LogicalName="appearance-pickers.png" />
+    <EmbeddedResource Include="$(WardrobeSource)/docs/wardrobe/gear-picker.png" LogicalName="gear-picker.png" />
+    <Reference Update="Dalamud.Bindings.ImGui;HexaGen.Runtime" Private="true" />
+    <None Include="$(DalamudLibPath)/cimgui.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

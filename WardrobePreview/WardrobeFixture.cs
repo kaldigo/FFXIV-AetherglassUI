@@ -1,0 +1,86 @@
+using System.Numerics;
+using AetherglassUI;
+using Aetherloom;
+using Dalamud.Bindings.ImGui;
+
+internal sealed class WardrobeFixture:IWardrobe
+{
+    private readonly Dictionary<uint,Picture> art=[];
+    private readonly List<WardrobeSlot> rows=[];
+    private readonly List<(Guid Id,string Name,string[] Tags)> designs=[];
+    private readonly Dictionary<string,byte> chosen=[];
+    private readonly List<WardrobeDye> palette=[];
+    public WardrobeLayout Layout=null!;
+    public Guid Selected{get;private set;}
+    public string Title=>designs.First(d=>d.Id==Selected).Name;
+    public string[] Tags=>designs.First(d=>d.Id==Selected).Tags;
+    public string Message=>"";
+    public IEnumerable<(Guid,string,string[])> Designs=>designs;
+    public IEnumerable<WardrobeDye> Dyes=>palette;
+    public WardrobeFixture(Func<string,ImTextureID> load)
+    {
+        var gear=load("gear");var look=load("appearance");var acc=load("accessories");
+        Picture Cut(ImTextureID t,float x,float y,float w,float h)=>new(t,new(x/1585,y/992),new((x+w)/1585,(y+h)/992));
+        art[100]=Cut(gear,960,58,620,843);art[101]=Cut(look,960,58,620,849); art[102]=Cut(acc,1020,60,560,840);
+        string[] keys=["MainHand","Head","Body","Hands","Legs","Feet","Ears","Neck","Wrists","RFinger","LFinger"];
+        string[] labels=["Main hand","Head","Body","Hands","Legs","Feet","Earrings","Necklace","Bracelets","Right ring","Left ring"];
+        string[] names=["Longbow","Woolen Beret","Expedition Coat","Leather Gloves","Wool Tights","Expedition Boots","Silver Ear Cuffs","Wayfarer’s Choker","Leather Wristband","Silver Band","Amber Ring"];
+        for(int i=0;i<keys.Length;i++){
+            uint id=(uint)(i+1);
+            art[id]=i<6?Cut(gear,470,new[]{277,363,448,535,621,700}[i],81,61):Cut(acc,542,275+(i-6)*111,103,77);
+            rows.Add(new(keys[i],labels[i],new(id,names[i],id,i>=9?0:2,i==0?"Bard":""),5,2,true));
+        }
+        var styles=load("appearance-pickers");
+        var items=load("gear-picker");
+        for(int i=0;i<12;i++){
+            float y=271+80*(i/4);
+            Picture StyleTile(float x)=>new(styles,new(x/2172,y/724),new((x+66)/2172,(y+66)/724));
+            art[(uint)(60+i)]=StyleTile(445+79*(i%4));
+            art[(uint)(80+i)]=StyleTile(1531+81*(i%4));
+        }
+        for(int i=0;i<3;i++)art[(uint)(120+i)]=Cut(items,587,528+i*83,60,60);
+        foreach(var name in new[]{"Highland Scout","Rainy Afternoon","Winter Courier","Moonlit Waltz"})designs.Add((Guid.NewGuid(),name,["Adventuring","Winter","Travel"]));
+        Selected=designs[0].Id;
+        uint[] colors=[0xffdededb,0xff493324,0xff6b89b2,0xff79dacb,0xff3e5943,0xff856344,0xff9d6289,0xffa4b4ba];
+        for(int i=0;i<8;i++)for(int j=0;j<21;j++){
+            byte id=(byte)(i+1+8*j);var color=colors[i];var shade=(uint)Math.Clamp(70+j*10,0,255);
+            uint Adjust(int shift)=>Math.Min(255,((color>>shift)&255)*shade/140);
+            palette.Add(new(id,id==5?"Hunter Green Dye":$"{new[]{"Neutral","Red","Brown","Yellow","Green","Blue","Purple","Special"}[i]} {j+1}",0xff000000|(Adjust(16)<<16)|(Adjust(8)<<8)|Adjust(0),i));
+        }
+    }
+    public string Availability(uint id)=>id is 4 or 11 or 25?"Missing":"Glamour Dresser";
+    public Picture? Icon(uint id)=>art.TryGetValue(id,out var img)?img:null;
+    public void Select(Guid id)=>Selected=id;
+    public void Refresh(){}
+    public void Create(string name){Selected=Guid.NewGuid();designs.Add((Selected,name,[]));}
+    public void Tag(string tag,bool add){var i=designs.FindIndex(x=>x.Id==Selected);designs[i]=(Selected,Title,add?[..Tags,tag]:Tags.Where(x=>x!=tag).ToArray());}
+    public IEnumerable<WardrobeSlot> Slots(bool accessories)=>rows.Where(x=>accessories==(x.Key is "Ears" or "Neck" or "Wrists" or "RFinger" or "LFinger"));
+    public IEnumerable<WardrobeItem> Catalog(string key){
+        var item=rows.First(r=>r.Key==key).Item;yield return item;
+        foreach(var (name,id) in new[]{("Highland Smock",22u),("Sky Pirate’s Jacket",23u),("Adventuring Sweater",25u)})yield return new(id,name,key=="Body"?(id==25?122u:id+98):item.Icon,2);
+    }
+    private void Change(string key,Func<WardrobeSlot,WardrobeSlot> change){int i=rows.FindIndex(x=>x.Key==key);rows[i]=change(rows[i]);}
+    public void SetItem(string key,uint id)=>Change(key,s=>s with{Item=Catalog(key).First(i=>i.Id==id)});
+    public void SetDye(string key,int channel,byte id)=>Change(key,s=>channel==0?s with{First=id}:s with{Second=id});
+    public void SetApply(string key,bool apply)=>Change(key,s=>s with{Apply=apply});
+    public void MainHand(string? remove){if(remove!=null)rows.RemoveAll(x=>x.Key==remove);else rows.Insert(1,new("MainHand/"+Guid.NewGuid(),"Main hand",new(0,"Empty",0,0),0,0,false));}
+    public IEnumerable<WardrobeStyle> Styles(string key)=>Enumerable.Range(0,12).Select(i=>new WardrobeStyle((byte)i,$"{(key=="Hairstyle"?"Hairstyle":"Pattern")} {i+1}",(uint)((key=="Hairstyle"?60:80)+i)));
+    public uint AppearanceColor(string key,byte value)=>key=="FacePaintColor"?0xff615161u:0xffc1b9bfu;
+    public byte Style(string key)=>chosen.GetValueOrDefault(key);
+    public void SetStyle(string key,byte id)=>chosen[key]=id;
+    private readonly HashSet<string> enabled=["Hair","Face paint"];
+    public bool GroupEnabled(string group)=>enabled.Contains(group);
+    public void SetGroupEnabled(string group,bool value){if(value)enabled.Add(group);else enabled.Remove(group);}
+    public bool HasCharacter=>true;
+    private readonly Dictionary<string,HashSet<uint>> assigned=new(){["Jobs"]=[1],["Zones"]=[1]};
+    public IEnumerable<(uint Id,string Name)> AssignmentOptions(string type)=>type=="Jobs"?[(1,"Bard"),(2,"Dragoon")]:[(1,"Coerthas Central Highlands"),(2,"Old Gridania")];
+    public IReadOnlyCollection<uint> Assigned(string type)=>assigned[type];
+    public void Assign(string type,uint id,bool enable){if(enable)assigned[type].Add(id);else assigned[type].Remove(id);}
+    public ISet<byte> FavoriteDyes{get;}=new HashSet<byte>{5,11,14,21,32};
+    public void ToggleFavorite(byte id){if(!FavoriteDyes.Remove(id))FavoriteDyes.Add(id);}
+    public void DrawPreview(){
+        uint id=Layout.Tab switch{"Appearance"=>101u,"Accessories"=>102u,_=>100u};
+        WorkspaceControls.Viewport("preview",art[id],id==102?2f/3:.735f,()=>{},30);
+        ImGui.TextDisabled("Left-drag to rotate, right-drag to pan, scroll to zoom.");
+    }
+}

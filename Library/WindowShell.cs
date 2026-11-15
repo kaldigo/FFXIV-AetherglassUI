@@ -38,6 +38,8 @@ public sealed class WindowShell
         }
     }
 
+    public bool ShowIconRail { get; set; } = true;
+    public bool ShowPageHeading { get; set; } = true;
     public Action? Close {get;set;}
     public Action? Dock {get;set;}
     private readonly List<Destination> subpages = [];
@@ -77,7 +79,7 @@ public sealed class WindowShell
 
         var size=ImGui.GetWindowSize();
         var dl=ImGui.GetWindowDrawList();
-        float header=50*scale, railWidth=49*scale, foot=footer==null?0:34*scale;
+        float header=50*scale, railWidth=ShowIconRail?49*scale:0, foot=footer==null?0:34*scale;
         float dock=Dock==null?0:42*scale;
         float bodyHeight=Math.Max(1,size.Y-header-foot-dock);
         float radius = 9 * scale;
@@ -86,9 +88,9 @@ public sealed class WindowShell
         {
             DrawBackdrop(dl,p,size,radius);
             dl.AddRectFilled(p,p+new Vector2(size.X,header),0x80170f0c,radius,ImDrawFlags.RoundCornersTop);
-            dl.AddRectFilled(p+new Vector2(0,header),p+new Vector2(railWidth,size.Y-foot),0x3b140d0a,radius,footer==null && Dock==null ? ImDrawFlags.RoundCornersBottomLeft : ImDrawFlags.RoundCornersNone);
+            if (ShowIconRail) dl.AddRectFilled(p+new Vector2(0,header),p+new Vector2(railWidth,size.Y-foot),0x3b140d0a,radius,footer==null && Dock==null ? ImDrawFlags.RoundCornersBottomLeft : ImDrawFlags.RoundCornersNone);
             dl.AddLine(p+new Vector2(0,header),p+new Vector2(size.X,header),0x21e8d3c9);
-            dl.AddLine(p+new Vector2(railWidth,header),p+new Vector2(railWidth,size.Y-foot),0x21e8d3c9);
+            if (ShowIconRail) dl.AddLine(p+new Vector2(railWidth,header),p+new Vector2(railWidth,size.Y-foot),0x21e8d3c9);
         } finally { dl.PopClipRect(); }
         ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding,5*scale);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize,1*scale);
@@ -112,6 +114,8 @@ public sealed class WindowShell
                 if(ImGui.IsItemHovered())ImGui.SetTooltip("Close window");
             }
             var active=pages.FirstOrDefault(x=>x.Id==Selected)??pages[0];
+            if (ShowIconRail)
+            {
             ImGui.SetCursorScreenPos(p+new Vector2(3*scale,header+14*scale));
             bool rail=ImGui.BeginChild("AetherglassUI rail",new Vector2(railWidth-4*scale,Math.Max(1,bodyHeight-14*scale)),false);
             try
@@ -130,6 +134,7 @@ public sealed class WindowShell
                 }
             }
             finally { ImGui.EndChild(); }
+            }
             Selected=active.Id;
             var current = subpages.Count == 0 ? active : subpages[^1];
             var bodyId = active.Id + string.Concat(subpages.Select(page => "/" + page.Id));
@@ -149,10 +154,13 @@ public sealed class WindowShell
                     }
                     if (current == (subpages.Count == 0 ? active : subpages[^1]))
                     {
+                        if (ShowPageHeading)
+                        {
                         ImGui.SetWindowFontScale(1.2f);
                         ImGui.TextUnformatted(current.Label);
                         ImGui.SetWindowFontScale(1);
                         ImGui.Dummy(new Vector2(0,8*scale));
+                        }
                         current.Draw();
                     }
                 }
