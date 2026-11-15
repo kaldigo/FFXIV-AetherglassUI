@@ -58,6 +58,12 @@ internal sealed class RenderForm(string? scene,string? output):Form
             io.AddMousePosEvent(235,100);
             if(frame>=12)io.AddMouseButtonEvent(0,frame==12);
         }
+        if(scene=="job-select" && frame==4)foreach(char c in "brd")io.AddInputCharacter(c);
+        if((scene is "gender-select" or "job-select") && frame is 5 or 6 or 7)
+        {
+            io.AddMousePosEvent(scene=="gender-select"?380:706,scene=="gender-select"?292:320);
+            if(frame>=6)io.AddMouseButtonEvent(0,frame==6);
+        }
         if(scene=="weapon-filter" && frame is 3 or 4 or 5)
         {
             io.AddMousePosEvent(510,272);
@@ -98,10 +104,14 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         ImGui.NewFrame();ImGui.SetNextWindowPos(Vector2.Zero);ImGui.SetNextWindowSize(io.DisplaySize);
         WindowShell.PushHostStyle();ImGui.Begin("Aetherloom",WindowShell.HostFlags|ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoMove);WindowShell.PopHostStyle();
-        if(frame is 1 or 2)layout.Show(scene switch{"details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
-            scene switch{"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear" or "weapon-filter"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
+        if(frame is 1 or 2)layout.Show(scene switch{"gender-select" or "job-select" or "designed-for" or "intended-for" or "details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
+            scene switch{"gender-select" or "designed-for"=>WardrobeMetadata.Gender,"job-select" or "intended-for"=>WardrobeMetadata.Intended,"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear" or "weapon-filter"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
-        if(++frame==(scene=="scroll-library"?17:scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter"?9:6) && output!=null){
+        if(++frame==(scene=="scroll-library"?17:scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter" or "gender-select" or "job-select"?9:6) && output!=null){
+            if(scene=="gender-select" && !fixture!.Tags.Contains("gender:Male"))
+                throw new InvalidOperationException("Selecting Male did not update the design.");
+            if(scene=="job-select" && !fixture!.Tags.Contains("intended:Bard"))
+                throw new InvalidOperationException("Searching BRD and choosing Bard did not update the design.");
             if(scene=="weapon-filter" && fixture!.WeaponTermRequests==0)
                 throw new InvalidOperationException("The weapon job dropdown did not query configured weapons.");
             if(scene=="filter-clear" && !layout.FilterClearPassed)
