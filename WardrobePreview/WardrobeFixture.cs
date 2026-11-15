@@ -44,7 +44,7 @@ internal sealed class WardrobeFixture:IWardrobe
     public IReadOnlyCollection<string> Folders=>folders;
     public IEnumerable<LibraryDesign> Designs=>designs.Select(d=>new LibraryDesign(d.Id,d.Name,d.Tags,paths.GetValueOrDefault(d.Id)??""));
     public IEnumerable<WardrobeDye> Dyes=>palette;
-    private readonly byte[] appearancePalette=new byte[4096];
+    private readonly byte[] appearancePalette=new byte[5120];
     public WardrobeFixture(Func<string,ImTextureID> load)
     {
         HeaderMark=load("mark");
@@ -146,13 +146,14 @@ internal sealed class WardrobeFixture:IWardrobe
     public void SetApply(string key,bool apply)=>Change(key,s=>s with{Apply=apply});
     public void MainHand(string? remove){if(remove!=null)rows.RemoveAll(x=>x.Key==remove);else rows.Insert(1,new("MainHand/"+Guid.NewGuid(),"Main hand",new(0,"Empty",0,0),0,0,false));}
     public IEnumerable<WardrobeStyle> Styles(string key)=>Enumerable.Range(0,12).Select(i=>new WardrobeStyle((byte)i,$"{(key=="Hairstyle"?"Hairstyle":"Pattern")} {i+1}",(uint)((key=="Hairstyle"?60:80)+i)));
+    public bool SupportsLipColor=>true;
     public uint AppearanceColor(string key,byte value)
     {
-        var index=key switch{"HairColor"=>value,"HighlightsColor"=>256+value,_=>value<128?512+value:768+value-128};
+        var index=key switch{"HairColor"=>value,"HighlightsColor"=>256+value,"LipColor"=>1024+value,_=>value<128?512+value:768+value-128};
         return BitConverter.ToUInt32(appearancePalette,index*4)|0xff000000;
     }
     public byte Style(string key)=>chosen.GetValueOrDefault(key);
-    public void SetStyle(string key,byte id)=>chosen[key]=id;
+    public void SetStyle(string key,byte id){chosen[key]=id;if(key=="LipColor")enabled.Add("Lip color");}
     private readonly HashSet<string> enabled=["Hair","Face paint"];
     public bool GroupEnabled(string group)=>enabled.Contains(group);
     public void SetGroupEnabled(string group,bool value){if(value)enabled.Add(group);else enabled.Remove(group);}
