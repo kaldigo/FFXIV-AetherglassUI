@@ -13,6 +13,13 @@ internal sealed class WardrobeFixture:IWardrobe
     public WardrobeLayout Layout=null!;
     public ImTextureID? HeaderMark {get;}
     public Guid Selected{get;private set;}
+    private readonly HashSet<Guid> favourites=[];
+    private readonly Dictionary<Guid,Guid> links=[];
+    public bool IsFavourite(Guid id)=>favourites.Contains(id);
+    public void ToggleFavouriteDesign(){if(!favourites.Remove(Selected))favourites.Add(Selected);}
+    public IEnumerable<LibraryDesign> Bases {get;}=[new(Guid.NewGuid(),"Viera appearance",["aetherloom-base"],"Appearance")];
+    public Guid? LinkedBase=>links.TryGetValue(Selected,out var value)?value:null;
+    public void SetBase(Guid? id){if(id.HasValue)links[Selected]=id.Value;else links.Remove(Selected);}
     public string Title=>designs.FirstOrDefault(d=>d.Id==Selected).Name??"";
     public string[] Tags=>designs.FirstOrDefault(d=>d.Id==Selected).Tags??[];
     public IReadOnlyList<string> KnownTags=>designs.SelectMany(d=>d.Tags).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();

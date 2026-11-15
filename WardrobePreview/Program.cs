@@ -60,7 +60,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         if(scene=="global-mode" && frame is >=3 and <=8)
         {
-            io.AddMousePosEvent(frame<=5?68:64,frame<=5?136:311);
+            io.AddMousePosEvent(frame<=5?125:64,frame<=5?138:311);
             if(frame is 4 or 5 or 7 or 8)io.AddMouseButtonEvent(0,frame is 4 or 7);
         }
         if(scene is "rule-conflict" or "rule-cancel" or "rule-move")
@@ -81,7 +81,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         if((scene is "filter-clear" or "tag-select") && frame is 3 or 4 or 5)
         {
-            io.AddMousePosEvent(scene=="filter-clear"?277:480,scene=="filter-clear"?471:389);
+            io.AddMousePosEvent(scene=="filter-clear"?277:480,scene=="filter-clear"?510:389);
             if(frame>=4)io.AddMouseButtonEvent(0,frame==4);
         }
         if((scene is "folder-menu" or "design-menu" or "design-clone") && frame is 2 or 3)
@@ -93,6 +93,11 @@ internal sealed class RenderForm(string? scene,string? output):Form
         {
             io.AddMousePosEvent(132,321);
             if(frame>=6)io.AddMouseButtonEvent(0,frame==6);
+        }
+        if(scene=="favourite-design" && frame is 2 or 3 or 4)
+        {
+            io.AddMousePosEvent(277,68);
+            if(frame>=3)io.AddMouseButtonEvent(0,frame==3);
         }
         if(scene=="ownership-bypass" && frame is 2 or 3 or 4)
         {
@@ -136,6 +141,8 @@ internal sealed class RenderForm(string? scene,string? output):Form
                 throw new InvalidOperationException("Clearing filters must preserve the search text.");
             if(scene=="tag-select" && !fixture!.Tags.Contains("style:Vintage"))
                 throw new InvalidOperationException("Selecting a style suggestion must save its category.");
+            if(scene=="favourite-design" && !fixture!.IsFavourite(fixture.Selected))
+                throw new InvalidOperationException("The star must favourite the selected design.");
             if(scene=="ownership-bypass" && !fixture!.BypassOwnership)
                 throw new InvalidOperationException("Design title switch did not enable the ownership bypass.");
             if(scene=="design-clone" && (fixture!.Title!="Highland Scout (copy)" ||
