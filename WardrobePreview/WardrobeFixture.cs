@@ -18,6 +18,9 @@ internal sealed class WardrobeFixture:IWardrobe
     public IReadOnlyList<string> KnownTags=>designs.SelectMany(d=>d.Tags).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     public IEnumerable<string> JobTerms(Guid id)=>["Bard","BRD"];
     public string Message=>"";
+    public bool ImportBusy=>false;
+    public string ImportStatus {get;private set;}="";
+    public void StartImport(bool fromPlates,string url,string parent)=>ImportStatus="Imports are available in game.";
     private readonly List<string> folders=["[AL] Adventuring","[AL] Adventuring/Winter"];
     private readonly Dictionary<Guid,string> paths=[];
     public IReadOnlyCollection<string> Folders=>folders;
