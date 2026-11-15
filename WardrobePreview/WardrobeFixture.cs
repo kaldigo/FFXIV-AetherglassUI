@@ -17,6 +17,7 @@ internal sealed class WardrobeFixture:IWardrobe
     public string Message=>"";
     public IEnumerable<(Guid,string,string[])> Designs=>designs;
     public IEnumerable<WardrobeDye> Dyes=>palette;
+    private readonly byte[] appearancePalette=new byte[4096];
     public WardrobeFixture(Func<string,ImTextureID> load)
     {
         var gear=load("gear");var look=load("appearance");var acc=load("accessories");
@@ -28,25 +29,29 @@ internal sealed class WardrobeFixture:IWardrobe
         for(int i=0;i<keys.Length;i++){
             uint id=(uint)(i+1);
             art[id]=i<6?Cut(gear,470,new[]{277,363,448,535,621,700}[i],81,61):Cut(acc,542,275+(i-6)*111,103,77);
-            rows.Add(new(keys[i],labels[i],new(id,names[i],id,i>=9?0:2,i==0?"Bard":""),5,2,true));
+            rows.Add(new(keys[i],labels[i],new(id,names[i],id,i>=9?0:2,i==0?"Bard":""),52,2,true));
         }
         var styles=load("appearance-pickers");
         var items=load("gear-picker");
         for(int i=0;i<12;i++){
-            float y=271+80*(i/4);
+            float y=273+94*(i/4);
             Picture StyleTile(float x)=>new(styles,new(x/2172,y/724),new((x+66)/2172,(y+66)/724));
             art[(uint)(60+i)]=StyleTile(445+79*(i%4));
-            art[(uint)(80+i)]=StyleTile(1531+81*(i%4));
+            art[(uint)(80+i)]=StyleTile(1531+79*(i%4));
         }
         for(int i=0;i<3;i++)art[(uint)(120+i)]=Cut(items,587,528+i*83,60,60);
         foreach(var name in new[]{"Highland Scout","Rainy Afternoon","Winter Courier","Moonlit Waltz"})designs.Add((Guid.NewGuid(),name,["Adventuring","Winter","Travel"]));
         Selected=designs[0].Id;
-        uint[] colors=[0xffdededb,0xff493324,0xff6b89b2,0xff79dacb,0xff3e5943,0xff856344,0xff9d6289,0xffa4b4ba];
-        for(int i=0;i<8;i++)for(int j=0;j<21;j++){
-            byte id=(byte)(i+1+8*j);var color=colors[i];var shade=(uint)Math.Clamp(70+j*10,0,255);
-            uint Adjust(int shift)=>Math.Min(255,((color>>shift)&255)*shade/140);
-            palette.Add(new(id,id==5?"Hunter Green Dye":$"{new[]{"Neutral","Red","Brown","Yellow","Green","Blue","Purple","Special"}[i]} {j+1}",0xff000000|(Adjust(16)<<16)|(Adjust(8)<<8)|Adjust(0),i));
+        using var samples=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("appearance-palette.bin")!;
+        samples.ReadExactly(appearancePalette);
+        using var stream=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("stains.tsv")!;
+        using var reader=new StreamReader(stream);
+        while(reader.ReadLine() is {} line)
+        {
+            var parts=line.Split('\t');
+            palette.Add(new(byte.Parse(parts[0]),parts[1],uint.Parse(parts[2]),WardrobeDye.FamilyFromShade(int.Parse(parts[3]))));
         }
+
     }
     public string Availability(uint id)=>id is 4 or 11 or 25?"Missing":"Glamour Dresser";
     public Picture? Icon(uint id)=>art.TryGetValue(id,out var img)?img:null;
@@ -65,7 +70,11 @@ internal sealed class WardrobeFixture:IWardrobe
     public void SetApply(string key,bool apply)=>Change(key,s=>s with{Apply=apply});
     public void MainHand(string? remove){if(remove!=null)rows.RemoveAll(x=>x.Key==remove);else rows.Insert(1,new("MainHand/"+Guid.NewGuid(),"Main hand",new(0,"Empty",0,0),0,0,false));}
     public IEnumerable<WardrobeStyle> Styles(string key)=>Enumerable.Range(0,12).Select(i=>new WardrobeStyle((byte)i,$"{(key=="Hairstyle"?"Hairstyle":"Pattern")} {i+1}",(uint)((key=="Hairstyle"?60:80)+i)));
-    public uint AppearanceColor(string key,byte value)=>key=="FacePaintColor"?0xff615161u:0xffc1b9bfu;
+    public uint AppearanceColor(string key,byte value)
+    {
+        var index=key switch{"HairColor"=>value,"HighlightsColor"=>256+value,_=>value<128?512+value:768+value-128};
+        return BitConverter.ToUInt32(appearancePalette,index*4)|0xff000000;
+    }
     public byte Style(string key)=>chosen.GetValueOrDefault(key);
     public void SetStyle(string key,byte id)=>chosen[key]=id;
     private readonly HashSet<string> enabled=["Hair","Face paint"];
@@ -78,9 +87,9 @@ internal sealed class WardrobeFixture:IWardrobe
     public void Assign(string type,uint id,bool enable){if(enable)assigned[type].Add(id);else assigned[type].Remove(id);}
     public ISet<byte> FavoriteDyes{get;}=new HashSet<byte>{5,11,14,21,32};
     public void ToggleFavorite(byte id){if(!FavoriteDyes.Remove(id))FavoriteDyes.Add(id);}
-    private readonly HashSet<string> display=["Weapon","Hat","VieraEars"];
-    public bool DisplayOption(string key)=>display.Contains(key);
-    public void ToggleDisplay(string key){if(!display.Remove(key))display.Add(key);}
+    private readonly Dictionary<string,bool?> display=new(){["Weapon"]=true,["Hat"]=true,["Visor"]=false};
+    public bool? DisplayOption(string key)=>display.GetValueOrDefault(key);
+    public void ToggleDisplay(string key)=>display[key]=key=="Draw"?DisplayOption(key)!=true:DisplayOption(key) switch{null=>true,true=>false,false=>null};
     public void ResetCamera(){}
     public void PreviewOptions(){}
     public void DrawPreview(){

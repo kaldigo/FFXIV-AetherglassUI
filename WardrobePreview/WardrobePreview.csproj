@@ -8,6 +8,8 @@
     <WardrobeSource Condition="'$(WardrobeSource)' == ''">../../Aetherloom</WardrobeSource>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="stains.tsv" LogicalName="stains.tsv" />
+    <EmbeddedResource Include="appearance-palette.bin" LogicalName="appearance-palette.bin" />
     <ProjectReference Include="../Library/AetherglassUI.csproj" />
     <Compile Include="../Preview/GlSurface.cs" Link="GlSurface.cs" />
     <Compile Include="$(WardrobeSource)/Aetherloom/WardrobeLayout.cs" Link="WardrobeLayout.cs" />

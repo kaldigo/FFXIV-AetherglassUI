@@ -44,28 +44,46 @@ public static class WorkspaceControls
         var size = new Vector2(Math.Max(1,width), 52*s);
         bool clicked = ImGui.InvisibleButton(id,size);
         var dl = ImGui.GetWindowDrawList();
-        dl.AddRectFilled(p,p+size, selected ? 0x903d5540u : ImGui.IsItemHovered() ? 0xba514941u : 0x80352d27u,5*s);
+        dl.AddRectFilled(p,p+size, selected ? 0xb4474530u : ImGui.IsItemHovered() ? 0xba514941u : 0x80352d27u,5*s);
         dl.AddRect(p,p+size,selected ? Accent : Border,5*s);
         var a=p+new Vector2(6*s); var b=a+new Vector2(40*s);
         if (icon.HasValue) icon.Value.Paint(a,b);
         if (missing) dl.AddRect(a,b,Missing,4*s);
         var x=icon.HasValue || missing ? b.X+9*s : a.X+4*s;
-        dl.PushClipRect(new Vector2(x,p.Y),p+size-new Vector2(3*s,0),true);
+        dl.PushClipRect(new Vector2(x,p.Y),p+size-new Vector2((selected?25:3)*s,0),true);
         dl.AddText(new Vector2(x,p.Y+(detail.Length==0?16:6)*s),0xffefefef,label);
         if (detail.Length>0) dl.AddText(new Vector2(x,p.Y+27*s),missing?Missing:0xffbfb5ac,detail);
         dl.PopClipRect();
+        if(selected)
+        {
+            var check=p+new Vector2(size.X-18*s,size.Y*.52f);
+            dl.AddLine(check-new Vector2(5,1)*s,check+new Vector2(-1,3)*s,Accent,2*s);
+            dl.AddLine(check+new Vector2(-1,3)*s,check+new Vector2(6,-5)*s,Accent,2*s);
+        }
         return clicked;
     }
 
-    public static bool Swatch(string id,uint rgba,string label,bool selected=false,float side=26,bool round=false)
+    public static bool Swatch(string id,uint rgba,string label,bool selected=false,float side=26,bool round=false,bool spectrum=false,float width=0)
     {
-        var p=ImGui.GetCursorScreenPos(); var size=new Vector2(side*Scale);
+        var p=ImGui.GetCursorScreenPos(); var size=new Vector2(width>0?width:side,side)*Scale;
         bool clicked=ImGui.InvisibleButton(id,size);
         var dl=ImGui.GetWindowDrawList();
         float radius=round?size.X/2:4*Scale;
         dl.AddRectFilled(p,p+size,rgba,radius);
-        dl.AddRect(p,p+size,selected?Accent:Border,radius,ImDrawFlags.None,selected?3:1);
-        if(selected && side>=22)
+        if(spectrum)
+        {
+            var center=p+size/2;
+            for(int i=0;i<48;i++)
+            {
+                float a=i*MathF.Tau/48,b=(i+1)*MathF.Tau/48;
+                float r=0,g=0,blue=0; ImGui.ColorConvertHSVtoRGB(i/48f,.8f,.95f,ref r,ref g,ref blue);
+                dl.AddTriangleFilled(center,center+new Vector2(MathF.Cos(a),MathF.Sin(a))*radius,
+                    center+new Vector2(MathF.Cos(b),MathF.Sin(b))*radius,ImGui.GetColorU32(new Vector4(r,g,blue,1)));
+            }
+        }
+        dl.AddRect(p,p+size,selected?Accent:ImGui.IsItemHovered()?0xffede8e2u:Border,radius,ImDrawFlags.None,selected?2:1);
+        if(round && selected)dl.AddCircle(p+size/2,radius-3*Scale,0xc025211du,32,2*Scale);
+        if(selected && !round)
         {
             var ink=((rgba&255)*299+((rgba>>8)&255)*587+((rgba>>16)&255)*114)>145000?0xff202022u:0xfffafafau;
             dl.AddLine(p+size*.28f,p+new Vector2(size.X*.44f,size.Y*.62f),ink,2*Scale);
@@ -75,17 +93,17 @@ public static class WorkspaceControls
         return clicked;
     }
 
-    public static bool RoundAction(string label,bool active,Action<ImDrawListPtr,Vector2,float,uint> glyph)
+    public static bool RoundAction(string label,bool active,Action<ImDrawListPtr,Vector2,float,uint> glyph,uint? tint=null,string? tooltip=null)
     {
         var side=30*Scale;
         var p=ImGui.GetCursorScreenPos();
         bool clicked=ImGui.InvisibleButton(label,new Vector2(side));
         var center=p+new Vector2(side/2);
         var dl=ImGui.GetWindowDrawList();
-        dl.AddCircleFilled(center,side*.46f,active?0xff484737u:0xff302c28u);
-        dl.AddCircle(center,side*.46f,ImGui.IsItemHovered()?0xffe7dfbeu:active?0xff90bad2u:0xff776c66u,32,1.6f*Scale);
-        glyph(dl,center,side,active?0xfff4eee3u:0xffc2b9afu);
-        if(ImGui.IsItemHovered())ImGui.SetTooltip(label);
+        dl.AddCircleFilled(center,side*.46f,tint.HasValue?(0xff000000u|((tint.Value>>2)&0x003f3f3fu)):active?0xff484737u:0xff302c28u);
+        dl.AddCircle(center,side*.46f,tint??(ImGui.IsItemHovered()?0xffe7dfbeu:active?0xff90bad2u:0xff776c66u),32,1.6f*Scale);
+        glyph(dl,center,side,tint??(active?0xfff4eee3u:0xffc2b9afu));
+        if(ImGui.IsItemHovered())ImGui.SetTooltip(tooltip??label);
         return clicked;
     }
 
@@ -102,7 +120,32 @@ public static class WorkspaceControls
         if(top+preferredHeight*Scale>bottom) top=Math.Max(vp.WorkPos.Y,bottom-preferredHeight*Scale);
         ImGui.SetNextWindowPos(new(left,top));
         ImGui.SetNextWindowSizeConstraints(new(width,0),new(width,vp.WorkSize.Y));
-        return ImGui.BeginPopup(id);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding,new Vector2(14,12)*Scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding,9*Scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.PopupBorderSize,1*Scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing,new Vector2(6,6)*Scale);
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding,new Vector2(8,5)*Scale);
+        ImGui.PushStyleColor(ImGuiCol.PopupBg,new Vector4(.09f,.11f,.14f,.99f));
+        ImGui.PushStyleColor(ImGuiCol.Border,new Vector4(.40f,.47f,.52f,.8f));
+        if(ImGui.BeginPopup(id))return true;
+        PopPickerStyle();
+        return false;
+    }
+    private static void PopPickerStyle()
+    {
+        ImGui.PopStyleColor(2);ImGui.PopStyleVar(5);
+    }
+    public static void EndPicker()
+    {
+        ImGui.EndPopup();PopPickerStyle();
+    }
+    public static void PickerHeading(string title)
+    {
+        var right=ImGui.GetCursorPosX()+ImGui.GetContentRegionAvail().X;
+        ImGui.AlignTextToFramePadding();ImGui.TextUnformatted(title);
+        ImGui.SameLine();ImGui.SetCursorPosX(right-24*Scale);
+        if(ImGui.Button("\u00d7##close",new Vector2(24*Scale)))ImGui.CloseCurrentPopup();
+        ImGui.Separator();
     }
 
     public static bool Thumbnail(string id,Picture? image,string label,bool selected,float side)

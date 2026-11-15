@@ -30,6 +30,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
         io.Fonts.AddFontFromFileTTF(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts),"segoeui.ttf"),16);
         surface=new GlSurface(Handle);
         var fixture=new WardrobeFixture(LoadReference);
+        if(scene=="dye-neutral"){fixture.SetDye("Body",0,0);fixture.FavoriteDyes.Clear();}
         layout=new(fixture);fixture.Layout=layout;
         timer.Tick+=(_,_)=>Invalidate();timer.Start();
     }
@@ -47,8 +48,8 @@ internal sealed class RenderForm(string? scene,string? output):Form
         var io=ImGui.GetIO();io.DisplaySize=new(ClientSize.Width,ClientSize.Height);io.DeltaTime=.025f;
         ImGui.NewFrame();ImGui.SetNextWindowPos(Vector2.Zero);ImGui.SetNextWindowSize(io.DisplaySize);
         WindowShell.PushHostStyle();ImGui.Begin("Aetherloom",WindowShell.HostFlags|ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoMove);WindowShell.PopHostStyle();
-        if(frame is 1 or 2)layout.Show(scene switch{"hair" or "paint" or "appearance"=>"Appearance","accessories"=>"Accessories","assignments"=>"Assignments",_=>"Gear"},
-            scene switch{"dye"=>"Body-dye0","items"=>"Body","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
+        if(frame is 1 or 2)layout.Show(scene switch{"hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories"=>"Accessories","assignments"=>"Assignments",_=>"Gear"},
+            scene switch{"dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items"=>"Body","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
         if(++frame==6 && output!=null){surface.Capture(output,ClientSize.Width,ClientSize.Height);BeginInvoke(Close);}
     }
