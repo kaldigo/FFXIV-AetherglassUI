@@ -15,7 +15,10 @@ internal sealed class WardrobeFixture:IWardrobe
     public string Title=>designs.First(d=>d.Id==Selected).Name;
     public string[] Tags=>designs.First(d=>d.Id==Selected).Tags;
     public string Message=>"";
-    public IEnumerable<(Guid,string,string[])> Designs=>designs;
+    private readonly List<string> folders=["[AL] Adventuring","[AL] Adventuring/Winter"];
+    private readonly Dictionary<Guid,string> paths=[];
+    public IReadOnlyCollection<string> Folders=>folders;
+    public IEnumerable<LibraryDesign> Designs=>designs.Select(d=>new LibraryDesign(d.Id,d.Name,d.Tags,paths.GetValueOrDefault(d.Id)??""));
     public IEnumerable<WardrobeDye> Dyes=>palette;
     private readonly byte[] appearancePalette=new byte[4096];
     public WardrobeFixture(Func<string,ImTextureID> load)
@@ -40,8 +43,8 @@ internal sealed class WardrobeFixture:IWardrobe
             art[(uint)(80+i)]=StyleTile(1531+79*(i%4));
         }
         for(int i=0;i<3;i++)art[(uint)(120+i)]=Cut(items,587,528+i*83,60,60);
-        foreach(var name in new[]{"Highland Scout","Rainy Afternoon","Winter Courier","Moonlit Waltz"})designs.Add((Guid.NewGuid(),name,["Adventuring","Winter","Travel"]));
-        Selected=designs[0].Id;
+        foreach(var name in new[]{"Highland Scout","Rainy Afternoon","Winter Courier","Moonlit Waltz"})designs.Add((Guid.NewGuid(),name,["aetherloom","Winter","Travel"]));
+        Selected=designs[0].Id;paths[Selected]="[AL] Adventuring";paths[designs[2].Id]="[AL] Adventuring/Winter";
         using var samples=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("appearance-palette.bin")!;
         samples.ReadExactly(appearancePalette);
         using var stream=typeof(WardrobeFixture).Assembly.GetManifestResourceStream("stains.tsv")!;
@@ -56,8 +59,9 @@ internal sealed class WardrobeFixture:IWardrobe
     public string Availability(uint id)=>id is 4 or 11 or 25?"Missing":"Glamour Dresser";
     public Picture? Icon(uint id)=>art.TryGetValue(id,out var img)?img:null;
     public void Select(Guid id)=>Selected=id;
-    public void Refresh(){}
-    public void Create(string name){Selected=Guid.NewGuid();designs.Add((Selected,name,[]));}
+    public bool Create(string name,string folder){Selected=Guid.NewGuid();designs.Add((Selected,name,["aetherloom"]));paths[Selected]=folder;return true;}
+    public bool CreateFolder(string parent,string name){folders.Add(parent.Length==0?"[AL] "+name:parent+"/"+name);return true;}
+    public void MoveDesign(Guid id,string folder)=>paths[id]=folder;
     public void Tag(string tag,bool add){var i=designs.FindIndex(x=>x.Id==Selected);designs[i]=(Selected,Title,add?[..Tags,tag]:Tags.Where(x=>x!=tag).ToArray());}
     public IEnumerable<WardrobeSlot> Slots(bool accessories)=>rows.Where(x=>accessories==(x.Key is "Ears" or "Neck" or "Wrists" or "RFinger" or "LFinger"));
     public IEnumerable<WardrobeItem> Catalog(string key){
