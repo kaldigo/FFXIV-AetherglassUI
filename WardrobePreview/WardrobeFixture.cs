@@ -166,7 +166,7 @@ internal sealed class WardrobeFixture:IWardrobe
     public string RuleLabel(string key)=>string.Join(" · ",key.Split('|').Select(k=>k switch{"any"=>"Any","region:22"=>"La Noscea","city:500"=>"Limsa Lominsa","job:21"=>"Warrior","job:23"=>"Bard",_=>k}));
     public Guid? RuleOwner(string key)=>rules.TryGetValue(key,out var owner)?owner:null;
     public string RuleNote(string key)=>key=="city:500|job:21"?"Takes priority over Rainy Afternoon (La Noscea · Warrior).":"";
-    public void SaveRule(string key,Guid? expected,bool remove){if(remove)rules.Remove(key);else rules[key]=Selected;}
+    public bool SaveRule(string key,Guid? expected,bool remove){if(RuleOwner(key)!=expected)return false;if(remove)rules.Remove(key);else rules[key]=Selected;return true;}
     public IEnumerable<(string Key,string Name)> RuleOptions(string type)=>type switch
     {
         "Job"=>[("any","Any job"),("job:21","Warrior"),("job:23","Bard"),("role:0","Tanks")],"Region"=>[("region:22","La Noscea")],

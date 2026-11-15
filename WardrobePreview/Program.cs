@@ -68,6 +68,12 @@ internal sealed class RenderForm(string? scene,string? output):Form
             if(frame is >=3 and <=5){io.AddMousePosEvent(330,348);if(frame>=4)io.AddMouseButtonEvent(0,frame==4);}
             if(scene!="rule-conflict" && frame is >=7 and <=9){io.AddMousePosEvent(scene=="rule-move"?302:360,467);if(frame>=8)io.AddMouseButtonEvent(0,frame==8);}
         }
+        if(scene=="rule-tab" && frame==4)layout.Show("Gear");
+        if(scene=="rule-add" && frame is >=3 and <=5)
+        {
+            io.AddMousePosEvent(315,315);
+            if(frame>=4)io.AddMouseButtonEvent(0,frame==4);
+        }
         if(scene=="rule-switch" && frame==4)
             fixture!.Select(fixture.Designs.First(d=>d.Id!=fixture.Selected).Id);
         if(scene=="job-select" && frame==4)foreach(char c in "brd")io.AddInputCharacter(c);
@@ -121,12 +127,12 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         ImGui.NewFrame();ImGui.SetNextWindowPos(Vector2.Zero);ImGui.SetNextWindowSize(io.DisplaySize);
         WindowShell.PushHostStyle();ImGui.Begin("Aetherloom",WindowShell.HostFlags|ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoMove);WindowShell.PopHostStyle();
-        if(frame is 1 or 2)layout.Show(scene switch{"gender-select" or "job-select" or "designed-for" or "intended-for" or "details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","rule-conflict" or "rule-cancel" or "rule-move" or "rule-switch" or "assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
+        if(frame is 1 or 2)layout.Show(scene switch{"gender-select" or "job-select" or "designed-for" or "intended-for" or "details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","rule-conflict" or "rule-cancel" or "rule-move" or "rule-switch" or "rule-tab" or "rule-add" or "assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
             scene switch{"gender-select" or "designed-for"=>WardrobeMetadata.Gender,"job-select" or "intended-for"=>WardrobeMetadata.Intended,"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear" or "weapon-filter"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
         if(++frame==(scene=="scroll-library"?17:scene is "global-mode" or "rule-conflict" or "rule-move" or "rule-cancel"?12:scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter" or "gender-select" or "job-select"?9:6) && output!=null){
-            if(scene=="rule-switch" && !layout.EmptyAssignmentDraft)
-                throw new InvalidOperationException("Switching designs carried over a proposed assignment.");
+            if((scene is "rule-switch" or "rule-tab" or "rule-add" or "rule-move") && !layout.EmptyAssignmentDraft)
+                throw new InvalidOperationException("The assignment editor kept a completed or abandoned draft.");
             if(scene=="global-mode" && (fixture!.AssignmentMode || fixture.Title!="Moonlit Waltz"))
                 throw new InvalidOperationException("Switching designs must preserve global Manual mode.");
             if(scene is "rule-conflict" or "rule-cancel" or "rule-move")
@@ -179,7 +185,8 @@ namespace Aetherloom
         internal void ConfigureScene(string? scene)
         {
             if(scene is "assignments" or "jobs" or "zones"){locationType="City or zone";rulePlace="city:500";ruleJob="job:21";}
-            if(scene is "rule-conflict" or "rule-move" or "rule-cancel" or "rule-switch"){locationType="Region";rulePlace="region:22";ruleJob="job:21";}
+            if(scene is "rule-conflict" or "rule-move" or "rule-cancel" or "rule-switch" or "rule-tab" or "rule-add"){locationType="Region";rulePlace="region:22";ruleJob="job:21";}
+            if(scene=="rule-add")ruleJob="job:23";
             if(scene is "tags" or "tag-select")newTag="Vi";
             if(scene=="filter-clear"){filter="Highland";onlyAvailable=true;}
             if(scene is not ("filters" or "filter-clear"))return;
