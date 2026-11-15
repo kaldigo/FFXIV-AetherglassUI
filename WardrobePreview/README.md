@@ -10,3 +10,5 @@ The renders folder contains captures at 1250 × 760. Original design references 
 Set WARDROBE_PREVIEW_WIDTH to change the capture width. The gear-wide capture uses 1500 pixels for comparison with the default 1250 pixels.
 
 The dye and dye-neutral scenes use a snapshot of the game stain sheet. The second opens an undyed channel with no favourites. The colors scene uses a sample character hair palette. The live plugin reads these colours from the installed game.
+
+The folder-menu scene right-clicks a folder. The folder-drag scene drags its child onto Wardrobe root and verifies that it became a top-level folder.

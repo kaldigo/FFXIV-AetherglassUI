@@ -11,6 +11,7 @@ internal sealed class WardrobeFixture:IWardrobe
     private readonly Dictionary<string,byte> chosen=[];
     private readonly List<WardrobeDye> palette=[];
     public WardrobeLayout Layout=null!;
+    public ImTextureID? HeaderMark {get;}
     public Guid Selected{get;private set;}
     public string Title=>designs.First(d=>d.Id==Selected).Name;
     public string[] Tags=>designs.First(d=>d.Id==Selected).Tags;
@@ -23,6 +24,7 @@ internal sealed class WardrobeFixture:IWardrobe
     private readonly byte[] appearancePalette=new byte[4096];
     public WardrobeFixture(Func<string,ImTextureID> load)
     {
+        HeaderMark=load("mark");
         var gear=load("gear");var look=load("appearance");var acc=load("accessories");
         Picture Cut(ImTextureID t,float x,float y,float w,float h)=>new(t,new(x/1585,y/992),new((x+w)/1585,(y+h)/992));
         art[100]=Cut(gear,960,58,620,843);art[101]=Cut(look,960,58,620,849); art[102]=Cut(acc,1020,60,560,840);
@@ -61,6 +63,25 @@ internal sealed class WardrobeFixture:IWardrobe
     public void Select(Guid id)=>Selected=id;
     public bool Create(string name,string folder){Selected=Guid.NewGuid();designs.Add((Selected,name,["aetherloom"]));paths[Selected]=folder;return true;}
     public bool CreateFolder(string parent,string name){folders.Add(parent.Length==0?"[AL] "+name:parent+"/"+name);return true;}
+    public bool RelocateFolder(string source,string parent,string name)
+    {
+        var destination=WardrobeLibrary.PathFor(parent,name);
+        if(WardrobeLibrary.Within(parent,source) || destination!=source && folders.Contains(destination))return false;
+        for(int i=0;i<folders.Count;i++)
+            if(WardrobeLibrary.Within(folders[i],source))folders[i]=destination+folders[i][source.Length..];
+        foreach(var (id,path) in paths.ToArray())
+            if(WardrobeLibrary.Within(path,source))paths[id]=destination+path[source.Length..];
+        return true;
+    }
+    public bool DeleteFolder(string path)
+    {
+        var parent=WardrobeLibrary.Parent(path);
+        var children=folders.Where(f=>WardrobeLibrary.Parent(f)==path).ToArray();
+        if(children.Any(c=>folders.Contains(WardrobeLibrary.PathFor(parent,WardrobeLibrary.Label(c)))))return false;
+        foreach(var child in children)RelocateFolder(child,parent,WardrobeLibrary.Label(child));
+        foreach(var (id,old) in paths.ToArray())if(old==path)paths[id]=parent;
+        return folders.Remove(path);
+    }
     public void MoveDesign(Guid id,string folder)=>paths[id]=folder;
     public void Tag(string tag,bool add){var i=designs.FindIndex(x=>x.Id==Selected);designs[i]=(Selected,Title,add?[..Tags,tag]:Tags.Where(x=>x!=tag).ToArray());}
     public IEnumerable<WardrobeSlot> Slots(bool accessories)=>rows.Where(x=>accessories==(x.Key is "Ears" or "Neck" or "Wrists" or "RFinger" or "LFinger"));

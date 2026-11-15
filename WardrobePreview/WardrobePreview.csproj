@@ -8,6 +8,7 @@
     <WardrobeSource Condition="'$(WardrobeSource)' == ''">../../Aetherloom</WardrobeSource>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="$(WardrobeSource)/assets/mark.png" LogicalName="mark.png" />
     <EmbeddedResource Include="stains.tsv" LogicalName="stains.tsv" />
     <EmbeddedResource Include="appearance-palette.bin" LogicalName="appearance-palette.bin" />
     <ProjectReference Include="../Library/AetherglassUI.csproj" />

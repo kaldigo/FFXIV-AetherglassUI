@@ -43,6 +43,47 @@ public static class WorkspaceControls
         finally { ImGui.EndTable(); }
     }
 
+    public static bool TreeRow(string id,string label,bool selected,bool isFolder,bool? expanded=null)
+    {
+        float s=Scale;
+        var p=ImGui.GetCursorScreenPos();
+        var size=new Vector2(Math.Max(1,ImGui.GetContentRegionAvail().X),29*s);
+        ImGui.PushStyleColor(ImGuiCol.Header,Vector4.Zero);
+        ImGui.PushStyleColor(ImGuiCol.HeaderHovered,Vector4.Zero);
+        ImGui.PushStyleColor(ImGuiCol.HeaderActive,Vector4.Zero);
+        bool clicked=ImGui.Selectable("###"+id,selected,ImGuiSelectableFlags.None,size);
+        ImGui.PopStyleColor(3);
+        var dl=ImGui.GetWindowDrawList();
+        if(selected || ImGui.IsItemHovered())
+            dl.AddRectFilled(p,p+size,selected?(isFolder?0x603f5140u:0xc04b5140u):0x554d443bu,4*s);
+        if(selected && !isFolder)dl.AddRectFilled(p,p+new Vector2(3*s,size.Y),Accent,2*s);
+        uint ink=selected?Accent:isFolder?0xffc7bb98u:0xffbcafa3u;
+        float cy=p.Y+size.Y/2;
+        var start=new Vector2(p.X+5*s,cy);
+        if(expanded is {} open)
+        {
+            var mid=start+new Vector2(3*s,0);
+            dl.AddLine(mid+(open?new Vector2(-3,-1):new Vector2(-1,-3))*s,mid+(open?new Vector2(0,2):new Vector2(2,0))*s,ink,1.5f*s);
+            dl.AddLine(mid+(open?new Vector2(0,2):new Vector2(2,0))*s,mid+(open?new Vector2(3,-1):new Vector2(-1,3))*s,ink,1.5f*s);
+        }
+        var icon=new Vector2(p.X+(isFolder?17:9)*s,cy);
+        if(isFolder)
+        {
+            dl.AddRectFilled(icon+new Vector2(0,-6)*s,icon+new Vector2(6,-1)*s,ink,1*s);
+            dl.AddRect(icon+new Vector2(0,-3)*s,icon+new Vector2(14,6)*s,ink,2*s,ImDrawFlags.None,1.5f*s);
+        }
+        else
+        {
+            dl.AddLine(icon+new Vector2(4,-4)*s,icon+new Vector2(7,-6)*s,ink,1.4f*s);
+            dl.AddLine(icon+new Vector2(7,-6)*s,icon+new Vector2(7,-1)*s,ink,1.4f*s);
+            dl.AddTriangle(icon+new Vector2(7,-1)*s,icon+new Vector2(14,5)*s,icon+new Vector2(0,5)*s,ink,1.4f*s);
+        }
+        var textPos=new Vector2(icon.X+22*s,cy-ImGui.GetTextLineHeight()/2);
+        dl.PushClipRect(p,p+size,true);dl.AddText(textPos,0xffede6de,label);dl.PopClipRect();
+        if(ImGui.IsItemHovered() && textPos.X+ImGui.CalcTextSize(label).X>p.X+size.X)ImGui.SetTooltip(label);
+        return clicked;
+    }
+
     public static bool Tile(string id, string label, string detail, Picture? icon, bool selected, bool missing, float width)
     {
         float s = Scale;
@@ -113,7 +154,7 @@ public static class WorkspaceControls
         return clicked;
     }
 
-    public static bool BeginPicker(string id,float width,float preferredHeight)
+    public static bool BeginPicker(string id,float width,float preferredHeight,Vector2? anchor=null)
     {
         if(!ImGui.IsPopupOpen(id))return false;
         var bounds=ImGui.GetWindowPos();
@@ -124,6 +165,11 @@ public static class WorkspaceControls
         float bottom=vp.WorkPos.Y+vp.WorkSize.Y;
         float top=ImGui.GetItemRectMax().Y+3*Scale;
         if(top+preferredHeight*Scale>bottom) top=Math.Max(vp.WorkPos.Y,bottom-preferredHeight*Scale);
+        if(anchor is {} at)
+        {
+            left=Math.Clamp(at.X,vp.WorkPos.X,Math.Max(vp.WorkPos.X,vp.WorkPos.X+vp.WorkSize.X-width));
+            top=Math.Clamp(at.Y,vp.WorkPos.Y,Math.Max(vp.WorkPos.Y,bottom-preferredHeight*Scale));
+        }
         ImGui.SetNextWindowPos(new(left,top));
         ImGui.SetNextWindowSizeConstraints(new(width,0),new(width,vp.WorkSize.Y));
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding,new Vector2(14,12)*Scale);

@@ -21,6 +21,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
     private GlSurface? surface;
     private WardrobeLayout? layout;
     private int frame;
+    private WardrobeFixture? fixture;
     private readonly System.Windows.Forms.Timer timer=new(){Interval=25};
     protected override unsafe void OnLoad(EventArgs e)
     {
@@ -29,7 +30,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
         ImGui.CreateContext();var io=ImGui.GetIO();io.IniFilename=null;
         io.Fonts.AddFontFromFileTTF(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts),"segoeui.ttf"),16);
         surface=new GlSurface(Handle);
-        var fixture=new WardrobeFixture(LoadReference);
+        fixture=new WardrobeFixture(LoadReference);
         if(scene=="dye-neutral"){fixture.SetDye("Body",0,0);fixture.FavoriteDyes.Clear();}
         layout=new(fixture);fixture.Layout=layout;
         timer.Tick+=(_,_)=>Invalidate();timer.Start();
@@ -46,12 +47,28 @@ internal sealed class RenderForm(string? scene,string? output):Form
     {
         if(surface==null||layout==null)return;
         var io=ImGui.GetIO();io.DisplaySize=new(ClientSize.Width,ClientSize.Height);io.DeltaTime=.025f;
+        if(scene=="folder-menu" && frame is 2 or 3)
+        {
+            io.AddMousePosEvent(84,215);
+            io.AddMouseButtonEvent(1,frame==2);
+        }
+        if(scene=="folder-drag")
+        {
+            if(frame is 1 or 2)io.AddMousePosEvent(85,247);
+            if(frame==2)io.AddMouseButtonEvent(0,true);
+            if(frame==3)io.AddMousePosEvent(105,246);
+            if(frame is 4 or 5)io.AddMousePosEvent(80,181);
+            if(frame==6)io.AddMouseButtonEvent(0,false);
+        }
         ImGui.NewFrame();ImGui.SetNextWindowPos(Vector2.Zero);ImGui.SetNextWindowSize(io.DisplaySize);
         WindowShell.PushHostStyle();ImGui.Begin("Aetherloom",WindowShell.HostFlags|ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoMove);WindowShell.PopHostStyle();
         if(frame is 1 or 2)layout.Show(scene switch{"hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories"=>"Accessories","assignments"=>"Assignments",_=>"Gear"},
             scene switch{"dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items"=>"Body","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
-        if(++frame==6 && output!=null){surface.Capture(output,ClientSize.Width,ClientSize.Height);BeginInvoke(Close);}
+        if(++frame==(scene=="folder-drag"?9:6) && output!=null){
+            if(scene=="folder-drag" && !fixture!.Folders.Contains("[AL] Winter"))
+                throw new InvalidOperationException("Dropping Winter onto the root did not promote it.");
+            surface.Capture(output,ClientSize.Width,ClientSize.Height);BeginInvoke(Close);}
     }
     protected override void OnMouseMove(MouseEventArgs e){if(surface!=null)ImGui.GetIO().AddMousePosEvent(e.X,e.Y);}
     protected override void OnMouseDown(MouseEventArgs e){if(surface!=null)ImGui.GetIO().AddMouseButtonEvent(e.Button==MouseButtons.Right?1:0,true);}
