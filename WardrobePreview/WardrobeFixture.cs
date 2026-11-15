@@ -135,7 +135,14 @@ internal sealed class WardrobeFixture:IWardrobe
         designs[i]=(Selected,Title,Tags.Except(remove,StringComparer.OrdinalIgnoreCase).Concat(add==null?[]:[add]).ToArray());
     }
     public IEnumerable<WardrobeSlot> Slots(bool accessories)=>rows.Where(x=>accessories==(x.Key is "Ears" or "Neck" or "Wrists" or "RFinger" or "LFinger"));
+    public bool LongGearCatalog {get;set;}
+    public object OwnershipSnapshot=>this;
     public IEnumerable<WardrobeItem> Catalog(string key){
+        if(LongGearCatalog && key=="Body")
+        {
+            for(uint i=1;i<=120;i++)yield return new(1000+i,$"Chestpiece {i:000}",0,0);
+            yield break;
+        }
         var item=rows.First(r=>r.Key==key).Item;yield return item;
         if(key!="Body")yield break;
         foreach(var (name,id) in new[]{("Highland Smock",22u),("Sky Pirate’s Jacket",23u),("Adventuring Sweater",25u)})yield return new(id,name,key=="Body"?(id==25?122u:id+98):item.Icon,2);

@@ -32,6 +32,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
         surface=new GlSurface(Handle);
         fixture=new WardrobeFixture(LoadReference);
         if(scene=="scroll-library")fixture.FillLibrary();
+        fixture.LongGearCatalog=scene=="scroll-gear";
         if(scene=="dye-neutral"){fixture.SetDye("Body",0,0);fixture.FavoriteDyes.Clear();}
         layout=new(fixture);fixture.Layout=layout;layout.ConfigureScene(scene);
         timer.Tick+=(_,_)=>Invalidate();timer.Start();
@@ -48,6 +49,12 @@ internal sealed class RenderForm(string? scene,string? output):Form
     {
         if(surface==null||layout==null)return;
         var io=ImGui.GetIO();io.DisplaySize=new(ClientSize.Width,ClientSize.Height);io.DeltaTime=.025f;
+        if(scene=="scroll-gear" && frame is >=3 and <=15)
+        {
+            io.AddMousePosEvent(440,580);
+            if(frame<=11)io.AddMouseWheelEvent(0,-8);
+            if(frame is 14 or 15)io.AddMouseButtonEvent(0,frame==14);
+        }
         if(scene=="scroll-library" && frame is >=2 and <=8)
         {
             io.AddMousePosEvent(118,405);
@@ -122,17 +129,19 @@ internal sealed class RenderForm(string? scene,string? output):Form
         }
         if((scene is "clear-gear" or "clear-accessory") && frame is 5 or 6 or 7)
         {
-            io.AddMousePosEvent(430,scene=="clear-gear"?473:357);
+            io.AddMousePosEvent(430,307);
             if(frame>=6)io.AddMouseButtonEvent(0,frame==6);
         }
         ImGui.NewFrame();ImGui.SetNextWindowPos(Vector2.Zero);ImGui.SetNextWindowSize(io.DisplaySize);
         WindowShell.PushHostStyle();ImGui.Begin("Aetherloom",WindowShell.HostFlags|ImGuiWindowFlags.NoResize|ImGuiWindowFlags.NoMove);WindowShell.PopHostStyle();
         if(frame is 1 or 2)layout.Show(scene switch{"gender-select" or "job-select" or "designed-for" or "intended-for" or "details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "lip-color" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","rule-conflict" or "rule-cancel" or "rule-move" or "rule-switch" or "rule-tab" or "rule-add" or "assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
-            scene switch{"gender-select" or "designed-for"=>WardrobeMetadata.Gender,"job-select" or "intended-for"=>WardrobeMetadata.Intended,"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear" or "weapon-filter"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","lip-color"=>"LipColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
+            scene switch{"gender-select" or "designed-for"=>WardrobeMetadata.Gender,"job-select" or "intended-for"=>WardrobeMetadata.Intended,"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear" or "weapon-filter"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","lip-color"=>"LipColor","items" or "scroll-gear" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
-        if(++frame==(scene=="scroll-library"?17:scene is "global-mode" or "rule-conflict" or "rule-move" or "rule-cancel"?12:scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter" or "gender-select" or "job-select"?9:6) && output!=null){
+        if(++frame==(scene=="scroll-gear"?18:scene=="scroll-library"?17:scene is "global-mode" or "rule-conflict" or "rule-move" or "rule-cancel"?12:scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter" or "gender-select" or "job-select"?9:6) && output!=null){
             if((scene is "rule-switch" or "rule-tab" or "rule-add" or "rule-move") && !layout.EmptyAssignmentDraft)
                 throw new InvalidOperationException("The assignment editor kept a completed or abandoned draft.");
+            if(scene=="scroll-gear" && fixture!.Slots(false).Single(s=>s.Key=="Body").Item.Id<=1024)
+                throw new InvalidOperationException("Wheel scrolling must reach and select gear past the first 24 items.");
             if(scene=="global-mode" && (fixture!.AssignmentMode || fixture.Title!="Moonlit Waltz"))
                 throw new InvalidOperationException("Switching designs must preserve global Manual mode.");
             if(scene is "rule-conflict" or "rule-cancel" or "rule-move")
