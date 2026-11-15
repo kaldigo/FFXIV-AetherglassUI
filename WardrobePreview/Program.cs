@@ -31,6 +31,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
         io.Fonts.AddFontFromFileTTF(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts),"segoeui.ttf"),16);
         surface=new GlSurface(Handle);
         fixture=new WardrobeFixture(LoadReference);
+        if(scene=="scroll-library")fixture.FillLibrary();
         if(scene=="dye-neutral"){fixture.SetDye("Body",0,0);fixture.FavoriteDyes.Clear();}
         layout=new(fixture);fixture.Layout=layout;layout.ConfigureScene(scene);
         timer.Tick+=(_,_)=>Invalidate();timer.Start();
@@ -47,14 +48,24 @@ internal sealed class RenderForm(string? scene,string? output):Form
     {
         if(surface==null||layout==null)return;
         var io=ImGui.GetIO();io.DisplaySize=new(ClientSize.Width,ClientSize.Height);io.DeltaTime=.025f;
+        if(scene=="scroll-library" && frame is >=2 and <=8)
+        {
+            io.AddMousePosEvent(118,405);
+            if(frame>=3)io.AddMouseWheelEvent(0,-3);
+        }
+        if(scene=="scroll-library" && frame is >=11 and <=13)
+        {
+            io.AddMousePosEvent(220,100);
+            if(frame>=12)io.AddMouseButtonEvent(0,frame==12);
+        }
         if(scene=="weapon-filter" && frame is 3 or 4 or 5)
         {
-            io.AddMousePosEvent(510,247);
+            io.AddMousePosEvent(510,272);
             if(frame>=4)io.AddMouseButtonEvent(0,frame==4);
         }
         if((scene is "filter-clear" or "tag-select") && frame is 3 or 4 or 5)
         {
-            io.AddMousePosEvent(scene=="filter-clear"?277:480,scene=="filter-clear"?446:389);
+            io.AddMousePosEvent(scene=="filter-clear"?277:480,scene=="filter-clear"?471:389);
             if(frame>=4)io.AddMouseButtonEvent(0,frame==4);
         }
         if((scene is "folder-menu" or "design-menu" or "design-clone") && frame is 2 or 3)
@@ -90,7 +101,7 @@ internal sealed class RenderForm(string? scene,string? output):Form
         if(frame is 1 or 2)layout.Show(scene switch{"details" or "filters" or "tags" or "filter-clear" or "tag-select"=>"Details","hair" or "paint" or "colors" or "appearance"=>"Appearance","accessories" or "earrings" or "clear-accessory"=>"Accessories","assignments" or "jobs" or "zones"=>"Assignments",_=>"Gear"},
             scene switch{"import"=>"import","tags" or "tag-select"=>"tag-Style","filters" or "filter-clear" or "weapon-filter"=>"filters","jobs"=>"Jobs","zones"=>"Zones","dye" or "dye-neutral"=>"Body-dye0","colors"=>"HairColor","items" or "clear-gear"=>"Body","earrings" or "clear-accessory"=>"Ears","hair"=>"Hairstyle","paint"=>"FacePaint",_=>null});
         layout.Draw(()=>BeginInvoke(Close));ImGui.End();ImGui.Render();surface.Paint(ClientSize.Width,ClientSize.Height);
-        if(++frame==(scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter"?9:6) && output!=null){
+        if(++frame==(scene=="scroll-library"?17:scene is "design-clone" or "folder-drag" or "clear-gear" or "clear-accessory" or "weapon-filter"?9:6) && output!=null){
             if(scene=="weapon-filter" && fixture!.WeaponTermRequests==0)
                 throw new InvalidOperationException("The weapon job dropdown did not query configured weapons.");
             if(scene=="filter-clear" && !layout.FilterClearPassed)
@@ -129,11 +140,11 @@ namespace Aetherloom
         internal void ConfigureScene(string? scene)
         {
             if(scene is "tags" or "tag-select")newTag="Vi";
-            if(scene=="filter-clear")filter="Highland";
+            if(scene=="filter-clear"){filter="Highland";onlyAvailable=true;}
             if(scene is not ("filters" or "filter-clear"))return;
             filters[WardrobeMetadata.Intended].Add("Ranged DPS");
             filters["Style"].Add("Casual");
         }
-        internal bool FilterClearPassed=>FilterCount==0 && filter=="Highland";
+        internal bool FilterClearPassed=>FilterCount==0 && filter=="Highland" && !onlyAvailable;
     }
 }

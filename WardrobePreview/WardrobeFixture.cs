@@ -17,6 +17,11 @@ internal sealed class WardrobeFixture:IWardrobe
     public string[] Tags=>designs.FirstOrDefault(d=>d.Id==Selected).Tags??[];
     public IReadOnlyList<string> KnownTags=>designs.SelectMany(d=>d.Tags).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
     public int WeaponTermRequests {get;private set;}
+    public bool Wearable(Guid id)=>Designs.First(d=>d.Id==id).Name!="Moonlit Waltz";
+    public void FillLibrary()
+    {
+        for(int i=1;i<=60;i++)designs.Add((Guid.NewGuid(),$"Travel outfit {i:00}",["aetherloom"]));
+    }
     public IEnumerable<string> WeaponTerms(Guid id)
     {
         WeaponTermRequests++;
